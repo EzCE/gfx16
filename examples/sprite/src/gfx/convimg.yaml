@@ -1,0 +1,12 @@
+converts:
+  - name: sprites
+    style: direct
+    color-format: rgb565
+    images:
+      - oiram.png
+
+outputs:
+  - type: c
+    include-file: gfx.h
+    converts:
+      - sprites
