@@ -10,7 +10,7 @@ int main(void)
     gfx16_ClearVRAM();
 
     /* Set the color to draw with */
-    gfx16_SetColor(4859);
+    gfx16_SetColor(0x4859);
 
     /* Draw a filled rectangle */
     gfx16_FillRectangle(20, 20, 85, 130);
