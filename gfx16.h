@@ -41,36 +41,141 @@ extern "C" {
 #define GFX16_OS_GRAY       (0x8C51)
 #define GFX16_OS_DARKGRAY   (0x52AA)
 
+/**
+ * @brief Sets the display to 16bpp mode. It is recommended to call this function before using the library.
+ * 
+ */
 void gfx16_Set16bppMode(void);
 
+/**
+ * @brief Sets the color that the library's drawing functions will use.
+ * 
+ * @param color 16 bit color to set.
+ * @return uint16_t Color that was set previously.
+ */
 uint16_t gfx16_SetColor(uint16_t color);
 
+/**
+ * @brief Sets a pixel to the currently set drawing color.
+ * 
+ * @param x X coordinate of the pixel.
+ * @param y Y coordinate of the pixel.
+ */
 void gfx16_SetPixel(uint24_t x, uint8_t y);
 
+/**
+ * @brief Gets the current color of a pixel.
+ * 
+ * @param x X coordinate of the pixel.
+ * @param y Y coordinate of the pixel.
+ * @return uint16_t Color of the pixel.
+ */
 uint16_t gfx16_GetPixel(uint24_t x, uint8_t y);
 
+/**
+ * @brief Inverts the color of a pixel.
+ * 
+ * @param x X coordinate of the pixel.
+ * @param y Y coordinate of the pixel.
+ */
 void gfx16_InvertPixel(uint24_t x, uint8_t y);
 
+/**
+ * @brief Fills the screen with the specified color.
+ * 
+ * @param color 16 bit color to fill the screen with.
+ */
 void gfx16_FillScreen(uint16_t color);
 
+/**
+ * @brief Clears the screen and fills it with white.
+ * 
+ */
 void gfx16_ClearVRAM(void);
 
+/**
+ * @brief Draws a filled rectangle.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
 void gfx16_FillRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
+/**
+ * @brief Draws a filled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
 void gfx16_FillInvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
+/**
+ * @brief Draws a vertical line.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
 void gfx16_VertLine(uint24_t x, uint8_t y, uint8_t length);
 
+/**
+ * @brief Draws a horizontal line.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
 void gfx16_HorizLine(uint24_t x, uint8_t y, uint16_t length);
 
+/**
+ * @brief Draws an unfilled rectangle.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
 void gfx16_Rectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
+/**
+ * @brief Draws a vertical line which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
 void gfx16_InvertedVertLine(uint24_t x, uint8_t y, uint8_t length);
 
+/**
+ * @brief Draws a horizontal line which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
 void gfx16_InvertedHorizLine(uint24_t x, uint8_t y, uint16_t length);
 
+/**
+ * @brief Draws an unfilled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
 void gfx16_InvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
+/**
+ * @brief Draws a sprite.
+ * 
+ * @param sprite Pointer to an initialized sprite structure.
+ * @param x X coordinate of the sprite.
+ * @param y Y coordinate of the sprite.
+ */
 void gfx16_Sprite(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
 
 #ifdef __cplusplus

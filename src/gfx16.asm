@@ -37,8 +37,15 @@ macro breakPoint?
     ld (hl), 2
     pop hl
 end macro
+
 ;-------------------------------------------------------------------------------
+
 gfx16_Set16bppMode:
+; Sets the display to 16bpp mode.
+; Arguments:
+;  None
+; Returns:
+;  None
     call gfx16_ClearVRAM
     ld de, ti.lcdNormalMode
     ld hl, ti.mpLcdBase
@@ -48,7 +55,13 @@ gfx16_Set16bppMode:
     ld (hl), de
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_SetColor:
+; Sets the color that the library's drawing functions will use.
+; Arguments:
+;  arg0: 16 bit color to set.
+; Returns:
+;  Color that was set previously.
     pop hl
     pop de
     push de
@@ -65,7 +78,14 @@ gfx16_SetColor:
     pop hl
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_SetPixel:
+; Sets a pixel to the currently set drawing color.
+; Arguments:
+;  arg0: X coordinate of the pixel.
+;  arg1: Y coordinate of the pixel.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -75,7 +95,14 @@ gfx16_SetPixel:
     ldi
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_GetPixel:
+; Gets the current color of a pixel.
+; Arguments:
+;  arg0: X coordinate of the pixel.
+;  arg1: Y coordinate of the pixel.
+; Returns:
+;  Color of the pixel.
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -86,7 +113,14 @@ gfx16_GetPixel:
     ex de, hl
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_InvertPixel:
+; Inverts the color of a pixel.
+; Arguments:
+;  arg0: X coordinate of the pixel.
+;  arg1: Y coordinate of the pixel.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -99,7 +133,13 @@ gfx16_InvertPixel:
     ld (hl), a
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_FillScreen:
+; Fills the screen with the specified color.
+; Arguments:
+;  16 bit color to fill the screen with.
+; Returns:
+;  None
     pop hl
     pop de
     push de
@@ -116,7 +156,13 @@ gfx16_FillScreen:
     ldir
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_ClearVRAM:
+; Clears the screen and fills it with white.
+; Arguments:
+;  None
+; Returns:
+;  None
     ld hl, ti.vRam
     push hl
     pop de
@@ -126,7 +172,16 @@ gfx16_ClearVRAM:
     ldir
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_FillRectangle:
+; Draws a filled rectangle.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -160,7 +215,17 @@ gfx16_FillRectangle:
     push hl
     jr .loop
 
+;-------------------------------------------------------------------------------
 gfx16_FillInvertedRectangle:
+; Draws a filled rectangle which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -197,7 +262,15 @@ gfx16_FillInvertedRectangle:
     push hl
     jr .loop
 
+;-------------------------------------------------------------------------------
 gfx16_VertLine:
+; Draws a vertical line.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -220,7 +293,15 @@ _VertLine_LoadColor:
     ret z
     jr .drawLoop
 
+;-------------------------------------------------------------------------------
 gfx16_HorizLine:
+; Draws a horizontal line.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -242,7 +323,16 @@ _HorizLine_LoadColor:
     ret z
     jr .drawLoop
 
+;-------------------------------------------------------------------------------
 gfx16_Rectangle:
+; Draws an unfilled rectangle.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -279,7 +369,16 @@ gfx16_Rectangle:
     ld bc, (iy + 9)
     jp _HorizLine_LoadColor
 
+;-------------------------------------------------------------------------------
 gfx16_InvertedVertLine:
+; Draws a vertical line which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -303,7 +402,16 @@ _InvertVertLine:
     djnz .drawLoop
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_InvertedHorizLine:
+; Draws a horizontal line which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -328,7 +436,17 @@ _InvertHorizLine:
     ret z
     jr .drawLoop
 
+;-------------------------------------------------------------------------------
 gfx16_InvertedRectangle:
+; Draws an unfilled rectangle which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -399,7 +517,15 @@ _getVramAddr: ; returns address in hl
     add hl, de
     ret
 
+;-------------------------------------------------------------------------------
 gfx16_Sprite:
+; Draws a sprite.
+; Arguments:
+;  arg0: Pointer to an initialized sprite structure.
+;  arg1: X coordinate of the sprite.
+;  arg2: Y coordinate of the sprite.
+; Returns:
+;  None
     ld iy, 3
     add iy, sp
     call _getVramAddr
@@ -431,6 +557,7 @@ gfx16_Sprite:
     push de
     jr .spriteLoop
 
+;-------------------------------------------------------------------------------
 _GlobalColor:
     rb 2
 _TextFGColor:
