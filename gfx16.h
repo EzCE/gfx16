@@ -42,10 +42,28 @@ extern "C" {
 #define GFX16_OS_DARKGRAY   (0x52AA)
 
 /**
- * @brief Sets the display to 16bpp mode. It is recommended to call this function before using the library.
+ * @brief Sets up the display for gfx16. It is necessary to call this function before using the library.
  * 
  */
-void gfx16_Set16bppMode(void);
+void gfx16_Begin(void);
+
+/**
+ * @brief Resets the display to the OS default. It is necessary to call this when you are done using the library, like at the end of your progra.
+ * 
+ */
+void gfx16_End(void);
+
+/**
+ * @brief Marks the beginning of a logical frame.
+ * 
+ */
+void gfx16_BeginFrame(void);
+
+/**
+ * @brief Marks the end of a logical frame. It's important to call this after you've called gfx16_BeginFrame.
+ * 
+ */
+void gfx16_EndFrame(void);
 
 /**
  * @brief Sets the color that the library's drawing functions will use.

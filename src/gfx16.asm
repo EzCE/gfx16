@@ -11,7 +11,10 @@ library GFX16, 1
 ;-------------------------------------------------------------------------------
 ; v1 functions
 ;-------------------------------------------------------------------------------
-    export gfx16_Set16bppMode
+    export gfx16_Begin
+    export gfx16_End
+    export gfx16_BeginFrame
+    export gfx16_EndFrame
     export gfx16_SetColor
     export gfx16_SetPixel
     export gfx16_GetPixel
@@ -29,7 +32,18 @@ library GFX16, 1
     export gfx16_Sprite
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
-VRAMSizeBytes    := LcdSize * 2
+VRAMSizeBytes   := LcdSize * 2
+pSpiRange       := 0D000h
+mpSpiRange      := 0F80000h
+spiValid        := 8
+pSpiValid       := pSpiRange + spiValid
+mpSpiValid      := mpSpiRange + spiValid
+spiStatus       := 12
+pSpiStatus      := pSpiRange + spiStatus
+mpSpiStatus     := mpSpiRange + spiStatus
+spiData         := 24
+pSpiData        := pSpiRange + spiData
+mpSpiData       := mpSpiRange + spiData
 ;-------------------------------------------------------------------------------
 macro breakPoint?
 	push hl
@@ -38,21 +52,150 @@ macro breakPoint?
     pop hl
 end macro
 
-;-------------------------------------------------------------------------------
+; SPI stuff by jacobly
+macro spi cmd, params&
+    ld a, cmd
+    call spiCmd
+    match any, params
+        iterate param, any
+            ld a, param
+            call spiParam
+        end iterate
+    end match
+end macro
 
-gfx16_Set16bppMode:
-; Sets the display to 16bpp mode.
+;-------------------------------------------------------------------------------
+gfx16_Begin:
+; Sets up the display for gfx16.
 ; Arguments:
 ;  None
 ; Returns:
 ;  None
     call gfx16_ClearVRAM
-    ld de, ti.lcdNormalMode
+    call ti.boot.InitializeHardware
+    ld de, ti.lcdWatermark + ti.lcdIntFront + ti.lcdPwr + ti.lcdBgr + ti.lcdBpp16
     ld hl, ti.mpLcdBase
     ld bc, ti.vRam
     ld (hl), bc
     ld l, ti.lcdCtrl
     ld (hl), de
+    spi $36, $28 ; sets LCD to column major update
+    spi $2A, 0, 0, 0, $EF ; changes bounding of rows and columns
+    spi $2B, 0, 0, 1, $3F
+    ld hl, ti.mpLcdRange + 1
+    ld de, _LcdTiming
+    ld bc, 0
+	ld b, 8 + 1 ; +1 because c = 0, so first ldi will decrement b
+.ExchangeTimingLoop: ; exchange stored and active timing
+	ld a, (de)
+	ldi
+	dec	hl
+	ld (hl), a
+	inc	hl
+	djnz .ExchangeTimingLoop
+    ret
+
+spiParam:
+    scf
+    virtual
+        jr nc, $
+        load .jr_nc : byte from $$
+    end virtual
+    db .jr_nc
+spiCmd:
+    or a, a
+    ld hl, mpSpiData or spiValid shl 8
+    ld b, 3
+.loop:	
+    rla
+    rla
+    rla
+    ld (hl), a
+    djnz .loop
+    ld l, h
+    ld (hl), 1
+.wait:
+    ld l, spiStatus + 1
+.wait1:
+    ld a, (hl)
+    and	a, $f0
+    jr nz, .wait1
+    dec	l
+.wait2:
+    bit	2, (hl)
+    jr nz, .wait2
+    ld l, h
+    ld (hl), a
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_End:
+; Resets the display to the OS default.
+; Arguments:
+;  None
+; Returns:
+;  None
+    ld de, ti.lcdNormalMode
+    ld hl, ti.mpLcdBase
+    ld l, ti.lcdCtrl
+    ld (hl), de
+    spi $B0, $11 ; enable framebuffer copies
+    spi $36, $08 ; reset LCD defaults
+    spi $2B, 0, 0, 0, $EF
+    spi $2A, 0, 0, 1, $3F
+    ld hl, ti.mpLcdRange + 1
+    ld de, _LcdTiming
+    ld bc, 0
+	ld b, 8 + 1 ; +1 because c = 0, so first ldi will decrement b
+.ExchangeTimingLoop: ; exchange stored and active timing
+	ld a, (de)
+	ldi
+	dec	hl
+	ld (hl), a
+	inc	hl
+	djnz .ExchangeTimingLoop
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_BeginFrame:
+; Marks the beginning of a logical frame.
+; Arguments:
+;  None
+; Returns:
+;  None
+    ld a, (ti.mpLcdRis)
+    and a, ti.lcdIntVcomp
+    jr z, gfx16_BeginFrame
+    ld (ti.mpLcdIcr), a
+    spi $B0, $01 ; disable framebuffer copies
+    spi $2C
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_EndFrame:
+; Marks the end of a logical frame.
+; Arguments:
+;  None
+; Returns:
+;  None
+	ld a, (ti.mpLcdCurr + 2) ; a = *mpLcdCurr >> 16
+	ld hl, (ti.mpLcdCurr + 1) ; hl = *mpLcdCurr >> 8
+	sub a, h
+	jr nz, gfx16_EndFrame ; nz ==> lcdCurr may have updated mid-read; retry read
+    ld de, ti.vRamEnd
+    or a, a
+    sbc hl, de
+    jr z, .resetVcomp
+    ld a, ti.lcdIntVcomp
+    ld (ti.mpLcdIcr), a
+.loop:
+    ld a, (ti.mpLcdRis)
+    bit ti.bLcdIntVcomp, a
+    jr z, .loop
+.resetVcomp:
+    ld a, ti.lcdIntVcomp
+    ld (ti.mpLcdIcr), a
+    spi $B0, $11 ; enable framebuffer copies
     ret
 
 ;-------------------------------------------------------------------------------
@@ -564,3 +707,16 @@ _TextFGColor:
     rb 2
 _TextBGColor:
     rb 2
+_LcdTiming:
+;	db	14 shl 2 ; PPL shl 2
+	db	7 ; HSW
+	db	87 ; HFP
+	db	63 ; HBP
+	dw	(0 shl 10) + 319 ; (VSW shl 10) + LPP
+	db	179 ; VFP
+	db	0 ; VBP
+	db	(0 shl 6) + (0 shl 5) + 0 ; (ACB shl 6) + (CLKSEL shl 5) + PCD_LO
+; H = ((PPL + 1) * 16) + (HSW + 1) + (HFP + 1) + (HBP + 1) = 240 + 8 + 88 + 64 = 400
+; V = (LPP + 1) + (VSW + 1) + VFP + VBP = 320 + 1 + 179 + 0 = 500
+; CC = H * V * PCD * 2 = 400 * 500 * 2 * 2 = 800000
+; Hz = 48000000 / CC = 60

@@ -4,7 +4,7 @@
 int main(void)
 {
     /* Initialize graphics drawing */
-    gfx16_Set16bppMode();
+    gfx16_Begin();
 
     /* Clear screen and fill with white */
     gfx16_ClearVRAM();
@@ -29,6 +29,9 @@ int main(void)
 
     /* Waits for a key */
     while (!os_GetCSC());
+
+    /* Close the gfx16 library */
+    gfx16_End();
 
     return 0;
 }
