@@ -1,3 +1,5 @@
-.vscode
+.vscode/
+bin/
+obj/
 *.8xv
 *.lib

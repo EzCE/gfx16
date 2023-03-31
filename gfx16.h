@@ -74,6 +74,14 @@ void gfx16_EndFrame(void);
 uint16_t gfx16_SetColor(uint16_t color);
 
 /**
+ * @brief Sets the color that the library's transparent drawing functions will use.
+ * 
+ * @param color 16 bit color to set.
+ * @return uint16_t Color that was set previously.
+ */
+uint16_t gfx16_SetTransparentColor(uint16_t color);
+
+/**
  * @brief Sets a pixel to the currently set drawing color.
  * 
  * @param x X coordinate of the pixel.

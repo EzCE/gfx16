@@ -21,17 +21,17 @@ int main(void)
         kb_Scan();
 
         /* Vertical movement */
-        if (kb_IsDown(kb_KeyDown) && y + 2 <= 230) {
-            y += 2;
-        } else if (kb_IsDown(kb_KeyUp) && y) {
-            y -= 2;
+        if (kb_IsDown(kb_KeyDown) && (y + 5 < 225)) {
+            y += 5;
+        } else if (kb_IsDown(kb_KeyUp) && (y!= 0)) {
+            y -= 5;
         }
 
         /* Horizontal movement */
-        if (kb_IsDown(kb_KeyRight) && x + 2 <= 310) {
-            x += 2;
-        } else if (kb_IsDown(kb_KeyLeft) && x) {
-            x -= 2;
+        if (kb_IsDown(kb_KeyRight) && (x + 5 < 305)) {
+            x += 5;
+        } else if (kb_IsDown(kb_KeyLeft) && (x!= 0)) {
+            x -= 5;
         }
 
         /* Begin the frame */
@@ -41,7 +41,7 @@ int main(void)
         gfx16_FillScreen(GFX16_OS_WHITE);
 
         /* Draw rectangle */
-        gfx16_FillRectangle(x, y, 10, 10);
+        gfx16_FillRectangle(x, y, 20, 20);
 
         /* End frame and draw it to the screen */
         gfx16_EndFrame();

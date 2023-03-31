@@ -16,6 +16,7 @@ library GFX16, 1
     export gfx16_BeginFrame
     export gfx16_EndFrame
     export gfx16_SetColor
+    export gfx16_SetTransparentColor
     export gfx16_SetPixel
     export gfx16_GetPixel
     export gfx16_InvertPixel
@@ -46,7 +47,7 @@ pSpiData        := pSpiRange + spiData
 mpSpiData       := mpSpiRange + spiData
 ;-------------------------------------------------------------------------------
 macro breakPoint?
-	push hl
+    push hl
     ld hl, -1
     ld (hl), 2
     pop hl
@@ -85,14 +86,15 @@ gfx16_Begin:
     ld hl, ti.mpLcdRange + 1
     ld de, _LcdTiming
     ld bc, 0
-	ld b, 8 + 1 ; +1 because c = 0, so first ldi will decrement b
+    ld b, 8 + 1 ; +1 because c = 0, so first ldi will decrement b
+
 .ExchangeTimingLoop: ; exchange stored and active timing
-	ld a, (de)
-	ldi
-	dec	hl
-	ld (hl), a
-	inc	hl
-	djnz .ExchangeTimingLoop
+    ld a, (de)
+    ldi
+    dec hl
+    ld (hl), a
+    inc hl
+    djnz .ExchangeTimingLoop
     ret
 
 spiParam:
@@ -102,10 +104,12 @@ spiParam:
         load .jr_nc : byte from $$
     end virtual
     db .jr_nc
+
 spiCmd:
     or a, a
     ld hl, mpSpiData or spiValid shl 8
     ld b, 3
+
 .loop:	
     rla
     rla
@@ -114,15 +118,18 @@ spiCmd:
     djnz .loop
     ld l, h
     ld (hl), 1
+
 .wait:
     ld l, spiStatus + 1
+
 .wait1:
     ld a, (hl)
-    and	a, $f0
+    and a, $f0
     jr nz, .wait1
-    dec	l
+    dec l
+
 .wait2:
-    bit	2, (hl)
+    bit 2, (hl)
     jr nz, .wait2
     ld l, h
     ld (hl), a
@@ -146,14 +153,15 @@ gfx16_End:
     ld hl, ti.mpLcdRange + 1
     ld de, _LcdTiming
     ld bc, 0
-	ld b, 8 + 1 ; +1 because c = 0, so first ldi will decrement b
+    ld b, 8 + 1 ; +1 because c = 0, so first ldi will decrement b
+
 .ExchangeTimingLoop: ; exchange stored and active timing
-	ld a, (de)
-	ldi
-	dec	hl
-	ld (hl), a
-	inc	hl
-	djnz .ExchangeTimingLoop
+    ld a, (de)
+    ldi
+    dec hl
+    ld (hl), a
+    inc hl
+    djnz .ExchangeTimingLoop
     ret
 
 ;-------------------------------------------------------------------------------
@@ -178,20 +186,22 @@ gfx16_EndFrame:
 ;  None
 ; Returns:
 ;  None
-	ld a, (ti.mpLcdCurr + 2) ; a = *mpLcdCurr >> 16
-	ld hl, (ti.mpLcdCurr + 1) ; hl = *mpLcdCurr >> 8
-	sub a, h
-	jr nz, gfx16_EndFrame ; nz ==> lcdCurr may have updated mid-read; retry read
+    ld a, (ti.mpLcdCurr + 2) ; a = *mpLcdCurr >> 16
+    ld hl, (ti.mpLcdCurr + 1) ; hl = *mpLcdCurr >> 8
+    sub a, h
+    jr nz, gfx16_EndFrame ; nz ==> lcdCurr may have updated mid-read; retry read
     ld de, ti.vRamEnd
     or a, a
     sbc hl, de
     jr z, .resetVcomp
     ld a, ti.lcdIntVcomp
     ld (ti.mpLcdIcr), a
+
 .loop:
     ld a, (ti.mpLcdRis)
     bit ti.bLcdIntVcomp, a
     jr z, .loop
+
 .resetVcomp:
     ld a, ti.lcdIntVcomp
     ld (ti.mpLcdIcr), a
@@ -210,13 +220,26 @@ gfx16_SetColor:
     push de
     push hl
     ld hl, _GlobalColor
-    ld bc, 0
-    ld c, (hl)
-    inc hl
-    ld b, (hl)
-    ld (hl), d
-    dec hl
-    ld (hl), e
+    ld bc, (hl)
+    ld (hl), de
+    push bc
+    pop hl
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetTransparentColor:
+; Sets the color that the library's transparent drawing functions will use.
+; Arguments:
+;  arg0: 16 bit color to set.
+; Returns:
+;  Color that was set previously.
+    pop hl
+    pop de
+    push de
+    push hl
+    ld hl, _TransColor
+    ld bc, (hl)
+    ld (hl), de
     push bc
     pop hl
     ret
@@ -231,6 +254,14 @@ gfx16_SetPixel:
 ;  None
     ld iy, 0
     add iy, sp
+    ld a, (iy + 3)
+    ld b, -ti.lcdHeight
+    add a, b
+    ret c
+    ld hl, (iy + 6)
+    ld bc, -ti.lcdWidth
+    add hl, bc
+    ret c
     call _getVramAddr
     ld de, _GlobalColor
     ex de, hl
@@ -327,35 +358,75 @@ gfx16_FillRectangle:
 ;  None
     ld iy, 0
     add iy, sp
+    ld hl, (iy + 9) ; hl = width
+    ld de, (iy + 3) ; de = x coordinate
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (iy + 12) ; hl = height
+    ld de, (iy + 6) ; de = y coordinate
+    add hl, de
+    ld (iy + 12), hl
+    call _ClipRegion
+    ret c ; return if offscreen or degenerate
+    ld de, (iy + 3)
+    ld hl, (iy + 9)
+    sbc hl, de
+    push hl
+    ld de, (iy + 6)
+    ld hl, (iy + 12)
+    sbc hl, de
+    pop bc ; bc = new width
+    ;ld (iy + 9), bc
+    ld a, l ; a = new height
+    ;ld (iy + 12), a
+    ;ld (iy + 6), de
+    ld hl, (iy + 3) ; hl = new x, de = new y
+    jr _FillRectangle_NoClip
+
+;-------------------------------------------------------------------------------
+gfx16_FillRectangle_NoClip:
+; Draws an unclipped filled rectangle.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+
+_FillRectangle_NoClip:
     call _getVramAddr
     ld bc, (iy + 9)
     ld a, b
     or a, c
     ret z
-    xor a, a
-    cp a, (iy + 12)
+    ld a, (iy + 12)
+    or a, a
     ret z
     ld de, (_GlobalColor)
     push bc
     push hl
+    ld b, a
 
 .loop:
     ld (hl), e
     inc hl
     ld (hl), d
     inc hl
+    djnz .loop
+    pop hl
+    ld bc, ti.lcdHeight * 2
+    add hl, bc
+    pop bc
     dec bc
     ld a, b
     or a, c
-    jr nz, .loop
-    pop hl
-    ld bc, ti.lcdWidth * 2
-    add hl, bc
-    dec (iy + 12)
-    pop bc
     ret z
     push bc
     push hl
+    ld b, (iy + 12)
     jr .loop
 
 ;-------------------------------------------------------------------------------
@@ -376,11 +447,12 @@ gfx16_FillInvertedRectangle:
     ld a, b
     or a, c
     ret z
-    xor a, a
-    cp a, (iy + 12)
+    ld a, (iy + 12)
+    or a, a
     ret z
     push bc
     push hl
+    ld b, a
 
 .loop:
     ld a, (hl)
@@ -391,18 +463,18 @@ gfx16_FillInvertedRectangle:
     cpl
     ld (hl), a
     inc hl
+    djnz .loop
+    pop hl
+    ld bc, ti.lcdHeight * 2
+    add hl, bc
+    pop bc
     dec bc
     ld a, b
     or a, c
-    jr nz, .loop
-    pop hl
-    ld bc, ti.lcdWidth * 2
-    add hl, bc
-    dec (iy + 12)
-    pop bc
     ret z
     push bc
     push hl
+    ld b, (iy + 12)
     jr .loop
 
 ;-------------------------------------------------------------------------------
@@ -640,26 +712,6 @@ gfx16_InvertedRectangle:
     dec bc
     jp _InvertHorizLine
 
-_getVramAddr: ; returns address in hl
-    ld a, (iy + 6)
-    ld hl, ti.vRam
-    ld de, ti.lcdWidth * 2
-    ld b, a
-    xor a, a
-    cp a, b
-    jr z, .foundCoord
-
-.loopCoord:
-    add hl, de
-    djnz .loopCoord
-
-.foundCoord:
-    ex de, hl
-    ld hl, (iy + 3)
-    add hl, hl
-    add hl, de
-    ret
-
 ;-------------------------------------------------------------------------------
 gfx16_Sprite:
 ; Draws a sprite.
@@ -701,21 +753,145 @@ gfx16_Sprite:
     jr .spriteLoop
 
 ;-------------------------------------------------------------------------------
+; Inner library routines
+;-------------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------------
+_getVramAddr: ; returns address in hl
+; routine by calc84maniac
+    ld hl, ti.vRam
+    ld de, (iy + 3)
+    ; set a = ((x & $100) * lcdHeight) >> 8
+    ld a, d
+    ld d, ti.lcdHeight
+    rra
+    sbc a, a
+    and a, d
+    mlt de
+    add hl, de
+    add hl, de
+    ; add ((x & $100) * lcdHeight + y) * 2
+    ld d, a
+    ld e, (iy + 6)
+    add hl, de
+    add hl, de
+    ret
+
+;-------------------------------------------------------------------------------
+_Maximum:
+; Calculate the resut of a signed comparison
+; Inputs:
+;  DE, HL = numbers
+; Oututs:
+;  HL = max number
+    or a, a
+    sbc hl, de
+    add hl, de
+    jp p, .skip
+    ret pe
+    ex de, hl
+
+.skip:
+    ret po
+    ex de, hl
+    ret
+
+;-------------------------------------------------------------------------------
+_Minimum:
+; Calculate the resut of a signed comparison
+; Inputs:
+;  DE, HL = numbers
+; Oututs:
+;  HL = min number
+    or a, a
+    sbc hl, de
+    ex de, hl
+    jp p, .skip
+    ret pe
+    add hl, de
+
+.skip:
+    ret po
+    add hl, de
+    ret
+
+;-------------------------------------------------------------------------------
+_ClipRegion:
+; Calculates the new coordinates given the clip  and inputs
+; Inputs:
+;  None
+; Outputs:
+;  Modifies data registers
+;  Sets C flag if offscreen
+    ld hl, (_XMin)
+    ld de, (iy + 3)
+    call _Maximum
+    ld (iy + 3), hl
+    ld hl, (_XMax)
+    ld de, (iy + 9)
+    call _Minimum
+    ld (iy + 9), hl
+    ld de, (iy + 3)
+    call .compare
+    ret c
+    ld hl, (_YMin)
+    ld de, (iy + 6)
+    call _Maximum
+    ld (iy + 6), hl
+    ld hl, (_YMax)
+    ld de, (iy + 12)
+    call _Minimum
+    ld (iy + 12), hl
+    ld de, (iy + 6)
+
+.compare:
+    dec hl
+
+_SignedCompare:
+    or a, a
+    sbc hl, de
+    add hl, hl
+    ret po
+    ccf
+    ret
+
+;-------------------------------------------------------------------------------
+; Internal library data
+;-------------------------------------------------------------------------------
+
 _GlobalColor:
-    rb 2
+    dl 0
 _TextFGColor:
-    rb 2
+    dl 0
 _TextBGColor:
-    rb 2
+    dl 0
+_TransColor:
+    dl 0
+
+_XMin:
+    dl 0
+_YMin:
+    dl 0
+_XMax:
+    dl ti.lcdWidth
+_YMax:
+    dl ti.lcdHeight
+
+_ClipRegion_Full: ; x, y, w, h
+    dl 0
+    dl 0
+    dl ti.lcdWidth
+    dl ti.lcdHeight
+
 _LcdTiming:
-;	db	14 shl 2 ; PPL shl 2
-	db	7 ; HSW
-	db	87 ; HFP
-	db	63 ; HBP
-	dw	(0 shl 10) + 319 ; (VSW shl 10) + LPP
-	db	179 ; VFP
-	db	0 ; VBP
-	db	(0 shl 6) + (0 shl 5) + 0 ; (ACB shl 6) + (CLKSEL shl 5) + PCD_LO
+;   db 14 shl 2 ; PPL shl 2
+    db 7 ; HSW
+    db 87 ; HFP
+    db 63 ; HBP
+    dw (0 shl 10) + 319 ; (VSW shl 10) + LPP
+    db 179 ; VFP
+    db 0 ; VBP
+    db (0 shl 6) + (0 shl 5) + 0 ; (ACB shl 6) + (CLKSEL shl 5) + PCD_LO
 ; H = ((PPL + 1) * 16) + (HSW + 1) + (HFP + 1) + (HBP + 1) = 240 + 8 + 88 + 64 = 400
 ; V = (LPP + 1) + (VSW + 1) + VFP + VBP = 320 + 1 + 179 + 0 = 500
 ; CC = H * V * PCD * 2 = 400 * 500 * 2 * 2 = 800000
