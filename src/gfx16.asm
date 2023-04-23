@@ -254,11 +254,11 @@ gfx16_SetPixel:
 ;  None
     ld iy, 0
     add iy, sp
-    ld a, (iy + 3)
+    ld a, (iy + 6)
     ld b, -ti.lcdHeight
     add a, b
     ret c
-    ld hl, (iy + 6)
+    ld hl, (iy + 3)
     ld bc, -ti.lcdWidth
     add hl, bc
     ret c
