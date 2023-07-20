@@ -1688,7 +1688,7 @@ namespace ti?
 ;                          equ 0021AFCh
 ?DrawTILogo                := 0021B00h
 ?DrawThickRectBorder       := 0021B04h
-;                          equ 0021B08h
+?PutSCentered              := 0021B08h
 ?DrawStatusBarTextClr      := 0021B0Ch
 ;                          equ 0021B10h
 ;                          equ 0021B14h
@@ -2558,7 +2558,7 @@ namespace ti?
 
 ?curUnderBackup		:= 0D003E8h		; backup of curUnder
 
-?appData			:= 0D00429h		; formerly used for OFFSCRPT and ONSCRPT
+?appData			:= 0D00429h		; used for OFFSCRPT and ONSCRPT
 
 ?arcPtrEnd		:= 0D0052Fh
 
@@ -2993,8 +2993,8 @@ namespace ti?
 
 ?tempFreeArc		:= 0D02655h ; set after _ArcChk call
 
-?textFGColor		:= 0D02688h
-?textBGColor		:= 0D0268Ah
+?textFGcolor		:= 0D02688h
+?textBGcolor		:= 0D0268Ah
 
 ?drawBGColor		:= 0D026AAh
 ?drawFGColor		:= 0D026ACh
@@ -6630,6 +6630,10 @@ namespace ti?
 
 ;Data Type Equates
 ;---------------------------------------------------------------------
+?varTypeMask        := 1Fh
+?varGraphRef        := 6
+?dataTypeMask       := 3Fh
+
 ?RealObj			:= 0
 ?ListObj			:= 1
 ?MatObj			:= 2
@@ -6654,6 +6658,16 @@ namespace ti?
 ?AppVarObj		:= 15h	;application variable
 ?TempProgObj		:= 16h ;program, home deletes when finished
 ?GroupObj		:= 17h ;group.
+?FracObj        := 18h
+;               := 19h
+?ImageObj       := 1Ah
+?CFracObj       := 1Bh
+?RadObj         := 1Ch
+?CRadObj        := 1Dh
+?CPiObj         := 1Eh
+?CPiFracObj     := 1Fh
+?PiObj          := 20h
+?PiFracObj      := 21h
 
 ;System Error Codes
 ;-----------------------------------------------------------
@@ -6711,6 +6725,12 @@ namespace ti?
 ?E_ArchFull		:= 49
 ?E_Variable		:= 50+E_EDIT
 ?E_Duplicate		:= 51+E_EDIT
+?E_Date         := 52+E_EDIT
+?E_UnknownCmd   := 53+E_EDIT
+?E_OverLimit    := 54
+?E_Disabled     := 55
+?E_Xmit         := 56
+E_MemFull       := 57
 
 ;System Variable Equates
 ;------------------------------
@@ -7010,9 +7030,6 @@ namespace ti?
 ;----------------------------------------------------------------------
 ;There is a flag 1Eh.
 ;----------------------------------------------------------------------
-?varTypeMask		:= 1Fh		;is this a flag byte? yes
-?varGraphRef		:= 6
-;----------------------------------------------------------------------
 ?graphFlags2		:= 1Fh
 ?splitOverride		:= 3		;0 = force full screen with ParseInp, or something
 ;----------------------------------------------------------------------
@@ -7142,10 +7159,18 @@ namespace ti?
 ?mathprintEnabled	:= 5		;1 = use mathprint styling
 ;----------------------------------------------------------------------
 ?InitialBootMenuFlags	:= 45h
+?statWizards            := 2        ; 1 = stat wizards off
 ?dispinitialBootMenu	:= 4		; 1 = don't display the initial boot menu
 ;----------------------------------------------------------------------
 ?backlightFlags		:= 46h
 ?restoreBrightness	:= 0		;1 = restore lcd brightness when needed
+;----------------------------------------------------------------------
+?asymptoteFlags     := 47h
+?detectAsymptotes   := 0        ; 1 = detect asymptotes off
+;----------------------------------------------------------------------
+?fracFlags          := 48h
+?mixedFractions     := 0        ; 1 = display mixed fractions (Un/d)
+?answersAuto        := 1        ; 1 = display decimal answers
 ;----------------------------------------------------------------------
 ?grFlags			:= 4Ah
 ?drawGrLbls		:= 0		;1 = don't draw Graph Labels (this is usually reset anyway)
@@ -7156,5 +7181,8 @@ namespace ti?
 ;----------------------------------------------------------------------
 ?graphDispFlags		:= 4Bh
 ?backgroundValid		:= 4		;1 = items in graph background are still valid
+;----------------------------------------------------------------------
+?graphBgFlags        := 4Fh
+?drawGrBackground   := 0            ; 1 = graphBG is a solid color or an image that exists
 ;----------------------------------------------------------------------
 end namespace
