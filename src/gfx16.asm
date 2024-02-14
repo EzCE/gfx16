@@ -17,6 +17,7 @@ library GFX16, 1
     export gfx16_EndFrame
     export gfx16_SetColor
     export gfx16_SetTransparentColor
+    export gfx16_SetClipRegion
     export gfx16_SetPixel
     export gfx16_GetPixel
     export gfx16_InvertPixel
@@ -25,10 +26,14 @@ library GFX16, 1
     export gfx16_FillRectangle
     export gfx16_FillInvertedRectangle
     export gfx16_VertLine
+    export gfx16_VertLine_NoClip
     export gfx16_HorizLine
+    export gfx16_HorizLine_NoClip
     export gfx16_Rectangle
     export gfx16_InvertedVertLine
+    export gfx16_InvertedVertLine_NoClip
     export gfx16_InvertedHorizLine
+    export gfx16_InvertedHorizLine_NoClip
     export gfx16_InvertedRectangle
     export gfx16_Sprite
 ;-------------------------------------------------------------------------------
@@ -51,6 +56,14 @@ macro breakPoint?
     ld hl, -1
     ld (hl), 2
     pop hl
+end macro
+
+macro isHLLessThanDE?
+    or a, a
+    sbc hl, de
+    add hl, hl
+    jp po, $ + 5
+    ccf
 end macro
 
 ; SPI stuff by jacobly
@@ -142,6 +155,7 @@ gfx16_End:
 ;  None
 ; Returns:
 ;  None
+    call gfx16_ClearVRAM
     ld de, ti.lcdNormalMode
     ld hl, ti.mpLcdBase
     ld l, ti.lcdCtrl
@@ -245,6 +259,32 @@ gfx16_SetTransparentColor:
     ret
 
 ;-------------------------------------------------------------------------------
+gfx16_SetClipRegion:
+; Sets the dimensions of the drawing window for all clipped routines.
+; Arguments:
+;  arg0: Minimum X coordinate, inclusive.
+;  arg1: Minimum Y coordinate, inclusive.
+;  arg2: Maximum X coordinate, exclusive.
+;  arg3: Maximum X coordinate, exclusive.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld hl, _ClipRegion_Full
+    call .copy
+    ld iy, 0
+    add iy, sp
+    call _ClipRegion
+    ret c
+    lea hl, iy + 3
+
+.copy:
+    ld de, _XMin
+    ld bc, 4 * 3
+    ldir
+    ret
+
+;-------------------------------------------------------------------------------
 gfx16_SetPixel:
 ; Sets a pixel to the currently set drawing color.
 ; Arguments:
@@ -254,12 +294,13 @@ gfx16_SetPixel:
 ;  None
     ld iy, 0
     add iy, sp
-    ld a, (iy + 6)
-    ld b, -ti.lcdHeight
-    add a, b
+    ld bc, 0
+    ld c, (iy + 6)
+    ld hl, -ti.lcdHeight
+    add hl, bc
     ret c
-    ld hl, (iy + 3)
-    ld bc, -ti.lcdWidth
+    ld bc, (iy + 3)
+    ld hl, -ti.lcdWidth
     add hl, bc
     ret c
     call _getVramAddr
@@ -297,6 +338,15 @@ gfx16_InvertPixel:
 ;  None
     ld iy, 0
     add iy, sp
+    ld bc, 0
+    ld bc, (iy + 6)
+    ld hl, -ti.lcdHeight
+    add hl, bc
+    ret c
+    ld bc, (iy + 3)
+    ld hl, -ti.lcdWidth
+    add hl, bc
+    ret c
     call _getVramAddr
     ld a, (hl)
     cpl
@@ -479,7 +529,7 @@ gfx16_FillInvertedRectangle:
 
 ;-------------------------------------------------------------------------------
 gfx16_VertLine:
-; Draws a vertical line.
+; Draws a clipped vertical line.
 ; Arguments:
 ;  arg0: X coordinate of the line.
 ;  arg1: Y coordinate of the line.
@@ -488,29 +538,40 @@ gfx16_VertLine:
 ;  None
     ld iy, 0
     add iy, sp
-    call _getVramAddr
-    ld b, (iy + 9)
-    xor a, a
-    or a, b
-    ret z
-_VertLine_LoadColor:
-    ld de, (_GlobalColor)
-    ld a, b
-    ld bc, ti.lcdWidth * 2
-
-.drawLoop:
-    ld (hl), e
-    inc hl
-    ld (hl), d
-    dec hl
-    add hl, bc
-    dec a
-    ret z
-    jr .drawLoop
+    ld hl, (_XMax)
+    dec hl ; inclusive
+    ld de, (iy + 3) ; x
+    isHLLessThanDE
+    ret c ; x > xmax
+    ld hl, (_XMin)
+    ex de, hl
+    isHLLessThanDE
+    ret c ; x < xmin
+    ld hl, (iy + 9) ; length
+    ld de, (iy + 6) ; y
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (_YMin)
+    call _Maximum ; get minimum y
+    ld (iy + 6), hl
+    ld hl, (_YMax)
+    ld de, (iy + 9)
+    call _Minimum ; get maximum y
+    ld (iy + 9), hl
+    ld de, (iy + 6)
+    isHLLessThanDE
+    ret c ; return if not within y bounds
+    ld hl, (iy + 9)
+    sbc hl, de
+    ld (iy + 6), e
+    ld (iy + 9), l
+    ld bc, 0
+    ld c, l
+    jr _VertLine_NoClip
 
 ;-------------------------------------------------------------------------------
-gfx16_HorizLine:
-; Draws a horizontal line.
+gfx16_VertLine_NoClip:
+; Draws an unclipped vertical line.
 ; Arguments:
 ;  arg0: X coordinate of the line.
 ;  arg1: Y coordinate of the line.
@@ -519,24 +580,113 @@ gfx16_HorizLine:
 ;  None
     ld iy, 0
     add iy, sp
-    call _getVramAddr
-    ld bc, (iy + 9)
+    ld bc, 0
+    ld c, (iy + 9)
+
+_VertLine_NoClip:
     ld a, b
     or a, c
-    ret z
-_HorizLine_LoadColor:
+    ret z ; return if length is 0
+    call _getVramAddr
+    push hl
+    push bc
+    pop hl
+    add hl, hl
+    push hl
+    pop bc
+    pop hl
     ld de, (_GlobalColor)
-
-.drawLoop:
     ld (hl), e
     inc hl
     ld (hl), d
-    inc hl
+    dec bc
     dec bc
     ld a, b
     or a, c
     ret z
-    jr .drawLoop
+    push hl
+    pop de
+    dec hl
+    inc de
+    ldir
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_HorizLine:
+; Draws a clipped horizontal line.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld hl, (_YMax)
+    dec hl ; inclusive
+    ld de, (iy + 6) ; y
+    isHLLessThanDE
+    ret c ; y < ymin
+    ld hl, (_YMin)
+    ex de, hl
+    isHLLessThanDE
+    ret c ; x < xmin
+    ld hl, (iy + 9) ; length
+    ld de, (iy + 3) ; x
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (_XMin)
+    call _Maximum ; get minimum x
+    ld (iy + 3), hl
+    ld hl, (_XMax)
+    ld de, (iy + 9)
+    call _Minimum ; get maximum x
+    ld (iy + 9), hl
+    ld de, (iy + 3)
+    isHLLessThanDE
+    ret c ; return if not within x bounds
+    ld hl, (iy + 9)
+    sbc hl, de
+    ld (iy + 3), de
+    ld (iy + 9), hl
+    push hl
+    pop bc
+    jr _HorizLine_NoClip
+
+;-------------------------------------------------------------------------------
+gfx16_HorizLine_NoClip:
+; Draws a horizontal line without clipping.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld bc, (iy + 9)
+
+_HorizLine_NoClip:
+    ld a, b
+    or a, c
+    ret z ; return if length is 0
+    call _getVramAddr
+    ld de, (_GlobalColor)
+
+.loop:
+    ld (hl), e
+    inc hl
+    ld (hl), d
+    dec hl
+    push de
+    ld de, ti.lcdHeight * 2
+    add hl, de
+    pop de
+    dec bc
+    ld a, b
+    or a, c
+    jr nz, .loop
+    ret
 
 ;-------------------------------------------------------------------------------
 gfx16_Rectangle:
@@ -560,7 +710,7 @@ gfx16_Rectangle:
     or a, b
     ret z
     push hl
-    call _VertLine_LoadColor
+    ;call _VertLine_LoadColor
     pop de
     ld hl, (iy + 9)
     dec hl
@@ -570,10 +720,10 @@ gfx16_Rectangle:
     add hl, hl
     add hl, de
     ld b, (iy + 12)
-    call _VertLine_LoadColor
+    ;call _VertLine_LoadColor
     call _getVramAddr
     ld bc, (iy + 9)
-    call _HorizLine_LoadColor
+    ;call _HorizLine_LoadColor
     ld c, (iy + 6)
     ld a, (iy + 12)
     dec a
@@ -582,11 +732,11 @@ gfx16_Rectangle:
     ld (iy + 6), a
     call _getVramAddr
     ld bc, (iy + 9)
-    jp _HorizLine_LoadColor
+    ;jp _HorizLine_LoadColor
 
 ;-------------------------------------------------------------------------------
 gfx16_InvertedVertLine:
-; Draws a vertical line which inverts the colors it overlaps with
+; Draws a clipped vertical line which inverts the colors it overlaps with
 ; rather than drawing with a specified color.
 ; Arguments:
 ;  arg0: X coordinate of the line.
@@ -596,15 +746,135 @@ gfx16_InvertedVertLine:
 ;  None
     ld iy, 0
     add iy, sp
-    call _getVramAddr
-    ld b, (iy + 9)
-    xor a, a
-    or a, b
-    ret z
-_InvertVertLine:
-    ld de, ti.lcdWidth * 2
+    ld hl, (_XMax)
+    dec hl ; inclusive
+    ld de, (iy + 3) ; x
+    isHLLessThanDE
+    ret c ; x > xmax
+    ld hl, (_XMin)
+    ex de, hl
+    isHLLessThanDE
+    ret c ; x < xmin
+    ld hl, (iy + 9) ; length
+    ld de, (iy + 6) ; y
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (_YMin)
+    call _Maximum ; get minimum y
+    ld (iy + 6), hl
+    ld hl, (_YMax)
+    ld de, (iy + 9)
+    call _Minimum ; get maximum y
+    ld (iy + 9), hl
+    ld de, (iy + 6)
+    isHLLessThanDE
+    ret c ; return if not within y bounds
+    ld hl, (iy + 9)
+    sbc hl, de
+    ld (iy + 6), e
+    ld (iy + 9), l
+    ld bc, 0
+    ld c, l
+    jr _InvertedVertLine_NoClip
 
-.drawLoop:
+;-------------------------------------------------------------------------------
+gfx16_InvertedVertLine_NoClip:
+; Draws an unclipped vertical line which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld bc, 0
+    ld c, (iy + 9)
+
+_InvertedVertLine_NoClip:
+    ld a, b
+    or a, c
+    ret z ; return if length is 0
+    call _getVramAddr
+
+.loop:
+    ld a, (hl)
+    cpl
+    ld (hl), a
+    inc hl
+    ld a, (hl)
+    cpl
+    ld (hl), a
+    inc hl
+    dec c
+    jr nz, .loop
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_InvertedHorizLine:
+; Draws a clipped horizontal line which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld hl, (_YMax)
+    dec hl ; inclusive
+    ld de, (iy + 6) ; y
+    isHLLessThanDE
+    ret c ; y < ymin
+    ld hl, (_YMin)
+    ex de, hl
+    isHLLessThanDE
+    ret c ; x < xmin
+    ld hl, (iy + 9) ; length
+    ld de, (iy + 3) ; x
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (_XMin)
+    call _Maximum ; get minimum x
+    ld (iy + 3), hl
+    ld hl, (_XMax)
+    ld de, (iy + 9)
+    call _Minimum ; get maximum x
+    ld (iy + 9), hl
+    ld de, (iy + 3)
+    isHLLessThanDE
+    ret c ; return if not within x bounds
+    ld hl, (iy + 9)
+    sbc hl, de
+    ld (iy + 3), de
+    ld (iy + 9), hl
+    push hl
+    pop bc
+    jr _InvertedHorizLine_NoClip
+
+;-------------------------------------------------------------------------------
+gfx16_InvertedHorizLine_NoClip:
+; Draws an unclipped horizontal line which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the line.
+;  arg1: Y coordinate of the line.
+;  arg2: Length of the line.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld bc, (iy + 9)
+
+_InvertedHorizLine_NoClip:
+    ld a, b
+    or a, c
+    ret z ; return if length is 0
+    call _getVramAddr
+
+.loop:
     ld a, (hl)
     cpl
     ld (hl), a
@@ -613,43 +883,15 @@ _InvertVertLine:
     cpl
     ld (hl), a
     dec hl
+    push de
+    ld de, ti.lcdHeight * 2
     add hl, de
-    djnz .drawLoop
-    ret
-
-;-------------------------------------------------------------------------------
-gfx16_InvertedHorizLine:
-; Draws a horizontal line which inverts the colors it overlaps with
-; rather than drawing with a specified color.
-; Arguments:
-;  arg0: X coordinate of the line.
-;  arg1: Y coordinate of the line.
-;  arg2: Length of the line.
-; Returns:
-;  None
-    ld iy, 0
-    add iy, sp
-    call _getVramAddr
-    ld bc, (iy + 9)
-    ld a, b
-    or a, c
-    ret z
-
-_InvertHorizLine:
-.drawLoop:
-    ld a, (hl)
-    cpl
-    ld (hl), a
-    inc hl
-    ld a, (hl)
-    cpl
-    ld (hl), a
-    inc hl
+    pop de
     dec bc
     ld a, b
     or a, c
-    ret z
-    jr .drawLoop
+    jr nz, .loop
+    ret
 
 ;-------------------------------------------------------------------------------
 gfx16_InvertedRectangle:
@@ -674,7 +916,7 @@ gfx16_InvertedRectangle:
     or a, b
     ret z
     push hl
-    call _InvertVertLine
+    ;call _InvertVertLine
     pop de
     ld hl, (iy + 9)
     dec hl
@@ -684,7 +926,7 @@ gfx16_InvertedRectangle:
     add hl, hl
     add hl, de
     ld b, (iy + 12)
-    call _InvertVertLine
+    ;call _InvertVertLine
     call _getVramAddr
     ld bc, (iy + 9)
     dec bc
@@ -697,7 +939,7 @@ gfx16_InvertedRectangle:
     ret z
     inc hl
     inc hl
-    call _InvertHorizLine
+    ;call _InvertHorizLine
     ld c, (iy + 6)
     ld a, (iy + 12)
     dec a
@@ -710,7 +952,7 @@ gfx16_InvertedRectangle:
     ld bc, (iy + 9)
     dec bc
     dec bc
-    jp _InvertHorizLine
+    ;jp _InvertHorizLine
 
 ;-------------------------------------------------------------------------------
 gfx16_Sprite:
@@ -817,7 +1059,7 @@ _Minimum:
 
 ;-------------------------------------------------------------------------------
 _ClipRegion:
-; Calculates the new coordinates given the clip  and inputs
+; Calculates the new coordinates given the clip and inputs
 ; Inputs:
 ;  None
 ; Outputs:

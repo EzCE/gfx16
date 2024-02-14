@@ -82,6 +82,16 @@ uint16_t gfx16_SetColor(uint16_t color);
 uint16_t gfx16_SetTransparentColor(uint16_t color);
 
 /**
+ * @brief Sets the dimensions of the drawing window for all clipped routines.
+ * 
+ * @param xmin Minimum X coordinate, inclusive.
+ * @param ymin Minimum Y coordinate, inclusive.
+ * @param xmax Maximum X coordinate, exclusive.
+ * @param ymax Maximum X coordinate, exclusive.
+ */
+void gfx16_SetClipRegion(int xmin, int ymin, int xmax, int ymax);
+
+/**
  * @brief Sets a pixel to the currently set drawing color.
  * 
  * @param x X coordinate of the pixel.
@@ -140,22 +150,40 @@ void gfx16_FillRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 void gfx16_FillInvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
 /**
- * @brief Draws a vertical line.
+ * @brief Draws a clipped vertical line.
  * 
  * @param x X coordinate of the line.
  * @param y Y coordinate of the line.
  * @param length Length of the line.
  */
-void gfx16_VertLine(uint24_t x, uint8_t y, uint8_t length);
+void gfx16_VertLine(int x, int y, int length);
 
 /**
- * @brief Draws a horizontal line.
+ * @brief Draws an unclipped vertical line.
  * 
  * @param x X coordinate of the line.
  * @param y Y coordinate of the line.
  * @param length Length of the line.
  */
-void gfx16_HorizLine(uint24_t x, uint8_t y, uint16_t length);
+void gfx16_VertLine_NoClip(uint24_t x, uint8_t y, uint24_t length);
+
+/**
+ * @brief Draws a clipped horizontal line.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
+void gfx16_HorizLine(int x, int y, int length);
+
+/**
+ * @brief Draws an unclipped horizontal line.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
+void gfx16_HorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
 
 /**
  * @brief Draws an unfilled rectangle.
@@ -168,22 +196,40 @@ void gfx16_HorizLine(uint24_t x, uint8_t y, uint16_t length);
 void gfx16_Rectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
 /**
- * @brief Draws a vertical line which inverts the colors it overlaps with rather than drawing with a specified color.
+ * @brief Draws a clipped vertical line which inverts the colors it overlaps with rather than drawing with a specified color.
  * 
  * @param x X coordinate of the line.
  * @param y Y coordinate of the line.
  * @param length Length of the line.
  */
-void gfx16_InvertedVertLine(uint24_t x, uint8_t y, uint8_t length);
+void gfx16_InvertedVertLine(int x, int y, int length);
 
 /**
- * @brief Draws a horizontal line which inverts the colors it overlaps with rather than drawing with a specified color.
+ * @brief Draws a unclipped vertical line which inverts the colors it overlaps with rather than drawing with a specified color.
  * 
  * @param x X coordinate of the line.
  * @param y Y coordinate of the line.
  * @param length Length of the line.
  */
-void gfx16_InvertedHorizLine(uint24_t x, uint8_t y, uint16_t length);
+void gfx16_InvertedVertLine_NoClip(uint24_t x, uint8_t y, uint24_t length);
+
+/**
+ * @brief Draws a clipped horizontal line which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
+void gfx16_InvertedHorizLine(int x, int y, int length);
+
+/**
+ * @brief Draws an unclipped horizontal line which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the line.
+ * @param y Y coordinate of the line.
+ * @param length Length of the line.
+ */
+void gfx16_InvertedHorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
 
 /**
  * @brief Draws an unfilled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
