@@ -22,10 +22,10 @@ int main(void)
     gfx16_SetColor(GFX16_OS_GREEN);
 
     /* Draw a rectangle outline */
-    gfx16_Rectangle(180, 140, 75, 95);
+    gfx16_Rectangle_NoClip(180, 140, 75, 95);
 
     /* Draw a rectangle outline which inverts the colors of what it covers */
-    gfx16_InvertedRectangle(30, 115, 45, 65);
+    gfx16_InvertedRectangle_NoClip(30, 115, 45, 65);
 
     /* Waits for a key */
     while (!os_GetCSC());

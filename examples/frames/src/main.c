@@ -13,24 +13,24 @@ int main(void)
     gfx16_SetColor(GFX16_OS_BLUE);
 
     /* Square coordinates */
-    unsigned int x = 0;
-    uint8_t y = 0;
+    int x = 0;
+    int y = 0;
 
     /* Program loop */
     while (!kb_IsDown(kb_KeyClear)) {
         kb_Scan();
 
         /* Vertical movement */
-        if (kb_IsDown(kb_KeyDown) && (y + 5 < 225)) {
+        if (kb_IsDown(kb_KeyDown)) {
             y += 5;
-        } else if (kb_IsDown(kb_KeyUp) && (y!= 0)) {
+        } else if (kb_IsDown(kb_KeyUp)) {
             y -= 5;
         }
 
         /* Horizontal movement */
-        if (kb_IsDown(kb_KeyRight) && (x + 5 < 305)) {
+        if (kb_IsDown(kb_KeyRight)) {
             x += 5;
-        } else if (kb_IsDown(kb_KeyLeft) && (x!= 0)) {
+        } else if (kb_IsDown(kb_KeyLeft)) {
             x -= 5;
         }
 

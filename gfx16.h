@@ -130,24 +130,44 @@ void gfx16_FillScreen(uint16_t color);
 void gfx16_ClearVRAM(void);
 
 /**
- * @brief Draws a filled rectangle.
+ * @brief Draws an unclipped filled rectangle.
  * 
  * @param x X coordinate of the rectangle.
  * @param y Y coordinate of the rectangle.
  * @param width Width of the rectangle.
  * @param height Height of the rectangle.
  */
-void gfx16_FillRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
+void gfx16_FillRectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
 /**
- * @brief Draws a filled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * @brief Draws a clipped filled rectangle.
  * 
  * @param x X coordinate of the rectangle.
  * @param y Y coordinate of the rectangle.
  * @param width Width of the rectangle.
  * @param height Height of the rectangle.
  */
-void gfx16_FillInvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
+void gfx16_FillRectangle(int x, int y, int width, int height);
+
+/**
+ * @brief Draws an unclipped filled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
+void gfx16_FillInvertedRectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
+
+/**
+ * @brief Draws a clipped filled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
+void gfx16_FillInvertedRectangle(int x, int y, int width, int height);
 
 /**
  * @brief Draws a clipped vertical line.
@@ -186,14 +206,14 @@ void gfx16_HorizLine(int x, int y, int length);
 void gfx16_HorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
 
 /**
- * @brief Draws an unfilled rectangle.
+ * @brief Draws an unclipped unfilled rectangle.
  * 
  * @param x X coordinate of the rectangle.
  * @param y Y coordinate of the rectangle.
  * @param width Width of the rectangle.
  * @param height Height of the rectangle.
  */
-void gfx16_Rectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
+void gfx16_Rectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
 /**
  * @brief Draws a clipped vertical line which inverts the colors it overlaps with rather than drawing with a specified color.
@@ -232,14 +252,14 @@ void gfx16_InvertedHorizLine(int x, int y, int length);
 void gfx16_InvertedHorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
 
 /**
- * @brief Draws an unfilled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * @brief Draws an unclipped unfilled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
  * 
  * @param x X coordinate of the rectangle.
  * @param y Y coordinate of the rectangle.
  * @param width Width of the rectangle.
  * @param height Height of the rectangle.
  */
-void gfx16_InvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
+void gfx16_InvertedRectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
 /**
  * @brief Draws a sprite.
