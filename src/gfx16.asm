@@ -732,39 +732,42 @@ gfx16_Rectangle_NoClip:
 ;  None
     ld iy, 0
     add iy, sp
-    call _getVramAddr
-    ld bc, (iy + 9)
-    ld a, b
+    ld hl, (iy + 9)
+    ld a, h
+    or a, l
+    ret z
+    ld bc, 0
+    ld c, (iy + 12)
+    xor a, a
     or a, c
     ret z
-    ld b, (iy + 12)
-    xor a, a
-    or a, b
-    ret z
     push hl
-    ;call _VertLine_LoadColor
+    push bc
+    call _VertLine_NoClip
+    pop bc
     pop de
-    ld hl, (iy + 9)
+    ld hl, (iy + 3)
     dec hl
     ld a, h
     or a, l
     ret z
-    add hl, hl
     add hl, de
-    ld b, (iy + 12)
-    ;call _VertLine_LoadColor
-    call _getVramAddr
+    ld de, (iy + 3)
+    push de
+    ld (iy + 3), hl
+    call _VertLine_NoClip
+    pop de
+    ld (iy + 3), de
     ld bc, (iy + 9)
-    ;call _HorizLine_LoadColor
+    call _HorizLine_NoClip
     ld c, (iy + 6)
     ld a, (iy + 12)
     dec a
     ret z
     add a, c
     ld (iy + 6), a
-    call _getVramAddr
     ld bc, (iy + 9)
-    ;jp _HorizLine_LoadColor
+    jp _HorizLine_NoClip
 
 ;-------------------------------------------------------------------------------
 gfx16_InvertedVertLine:
@@ -938,53 +941,47 @@ gfx16_InvertedRectangle_NoClip:
 ;  None
     ld iy, 0
     add iy, sp
-    call _getVramAddr
-    ld bc, (iy + 9)
-    ld a, b
+    ld hl, (iy + 9)
+    ld a, h
+    or a, l
+    ret z
+    ld bc, 0
+    ld c, (iy + 12)
+    xor a, a
     or a, c
     ret z
-    ld b, (iy + 12)
-    xor a, a
-    or a, b
-    ret z
     push hl
-    ;call _InvertVertLine
+    push bc
+    call _InvertedVertLine_NoClip
+    pop bc
     pop de
-    ld hl, (iy + 9)
+    ld hl, (iy + 3)
     dec hl
     ld a, h
     or a, l
     ret z
-    add hl, hl
     add hl, de
-    ld b, (iy + 12)
-    ;call _InvertVertLine
-    call _getVramAddr
+    ld de, (iy + 3)
+    push de
+    ld (iy + 3), hl
+    call _InvertedVertLine_NoClip
+    pop de
+    inc de
+    ld (iy + 3), de
     ld bc, (iy + 9)
     dec bc
-    ld a, b
-    or a, c
-    ret z
     dec bc
-    ld a, b
-    or a, c
-    ret z
-    inc hl
-    inc hl
-    ;call _InvertHorizLine
+    call _InvertedHorizLine_NoClip
     ld c, (iy + 6)
     ld a, (iy + 12)
     dec a
     ret z
     add a, c
     ld (iy + 6), a
-    call _getVramAddr
-    inc hl
-    inc hl
     ld bc, (iy + 9)
     dec bc
     dec bc
-    ;jp _InvertHorizLine
+    jp _InvertedHorizLine_NoClip
 
 ;-------------------------------------------------------------------------------
 gfx16_Sprite:
