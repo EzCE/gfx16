@@ -2,6 +2,8 @@ converts:
   - name: sprites
     style: direct
     color-format: rgb565
+    flip-x: true
+    rotate: 90
     images:
       - oiram.png
 

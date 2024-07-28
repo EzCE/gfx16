@@ -31,6 +31,7 @@ library GFX16, 1
     export gfx16_VertLine_NoClip
     export gfx16_HorizLine
     export gfx16_HorizLine_NoClip
+    export gfx16_Rectangle
     export gfx16_Rectangle_NoClip
     export gfx16_InvertedVertLine
     export gfx16_InvertedVertLine_NoClip
@@ -721,6 +722,38 @@ _HorizLine_NoClip:
     ret
 
 ;-------------------------------------------------------------------------------
+gfx16_Rectangle:
+; Draws a clipped unfilled rectangle.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    ld hl, (iy + 9) ; hl = width
+    ld de, (iy + 3) ; de = x coordinate
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (iy + 12) ; hl = height
+    ld de, (iy + 6) ; de = y coordinate
+    add hl, de
+    ld (iy + 12), hl
+    call _ClipRegion
+    ret c ; return if offscreen or degenerate
+    ld de, (iy + 3)
+    ld hl, (iy + 9)
+    sbc hl, de
+    ld (iy + 9), hl
+    ld de, (iy + 6)
+    ld hl, (iy + 12)
+    sbc hl, de
+    ld (iy + 12), hl
+    jr _Rectangle_NoClip
+
+;-------------------------------------------------------------------------------
 gfx16_Rectangle_NoClip:
 ; Draws an unfilled rectangle.
 ; Arguments:
@@ -732,6 +765,8 @@ gfx16_Rectangle_NoClip:
 ;  None
     ld iy, 0
     add iy, sp
+
+_Rectangle_NoClip:
     ld hl, (iy + 9)
     ld a, h
     or a, l
@@ -929,8 +964,8 @@ _InvertedHorizLine_NoClip:
     ret
 
 ;-------------------------------------------------------------------------------
-gfx16_InvertedRectangle_NoClip:
-; Draws an unfilled rectangle which inverts the colors it overlaps with
+gfx16_InvertedRectangle:
+; Draws a clipped unfilled rectangle which inverts the colors it overlaps with
 ; rather than drawing with a specified color.
 ; Arguments:
 ;  arg0: X coordinate of the rectangle.
@@ -941,6 +976,41 @@ gfx16_InvertedRectangle_NoClip:
 ;  None
     ld iy, 0
     add iy, sp
+    ld hl, (iy + 9) ; hl = width
+    ld de, (iy + 3) ; de = x coordinate
+    add hl, de
+    ld (iy + 9), hl
+    ld hl, (iy + 12) ; hl = height
+    ld de, (iy + 6) ; de = y coordinate
+    add hl, de
+    ld (iy + 12), hl
+    call _ClipRegion
+    ret c ; return if offscreen or degenerate
+    ld de, (iy + 3)
+    ld hl, (iy + 9)
+    sbc hl, de
+    ld (iy + 9), hl
+    ld de, (iy + 6)
+    ld hl, (iy + 12)
+    sbc hl, de
+    ld (iy + 12), hl
+    jr _InvertedRectangle_NoClip
+
+;-------------------------------------------------------------------------------
+gfx16_InvertedRectangle_NoClip:
+; Draws an unfilled rectangle which inverts the colors it overlaps with
+; rather than drawing with a specified color.
+; Arguments:
+;  arg0: X coordinate of the rectangle.
+;  arg1: Y coordinate of the rectangle.
+;  arg2: Width of the rectangle.
+;  arg3: Height of the rectangle.
+; Returns:
+;  None-
+    ld iy, 0
+    add iy, sp
+
+_InvertedRectangle_NoClip:
     ld hl, (iy + 9)
     ld a, h
     or a, l
@@ -1015,7 +1085,7 @@ gfx16_Sprite:
     ret z
     ex de, hl
     push de
-    ld de, ti.lcdWidth * 2
+    ld de, ti.lcdHeight * 2
     add hl, de
     pop de
     ex de, hl
