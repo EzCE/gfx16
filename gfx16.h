@@ -262,6 +262,16 @@ void gfx16_InvertedHorizLine(int x, int y, int length);
 void gfx16_InvertedHorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
 
 /**
+ * @brief Draws a clipped unfilled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
+ * 
+ * @param x X coordinate of the rectangle.
+ * @param y Y coordinate of the rectangle.
+ * @param width Width of the rectangle.
+ * @param height Height of the rectangle.
+ */
+void gfx16_InvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
+
+/**
  * @brief Draws an unclipped unfilled rectangle which inverts the colors it overlaps with rather than drawing with a specified color.
  * 
  * @param x X coordinate of the rectangle.
