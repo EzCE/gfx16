@@ -1,5 +1,5 @@
 ### GFX16 Sprite Demo
 
-Draws a sprite on the screen.
+Draws a clipped sprite and unclipped sprite on the screen.
 
 ![Screenshot](screenshot.png)

@@ -12,8 +12,11 @@ int main(void)
     /* Clear screen and fill with white */
     gfx16_ClearVRAM();
 
+    /* Draw a clipped sprite near the bottom of the screen */
+    gfx16_Sprite(oiram, 130, 225);
+
     /* Draw an unclipped sprite */
-    gfx16_Sprite_NoClip(oiram, 0, 0);
+    gfx16_Sprite_NoClip(oiram, 190, 110);
 
     /* Waits for a key */
     while (!os_GetCSC());
