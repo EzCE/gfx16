@@ -12,8 +12,8 @@ int main(void)
     /* Clear screen and fill with white */
     gfx16_ClearVRAM();
 
-    /* Draw a sprite */
-    gfx16_Sprite(oiram, 0, 0);
+    /* Draw an unclipped sprite */
+    gfx16_Sprite_NoClip(oiram, 0, 0);
 
     /* Waits for a key */
     while (!os_GetCSC());

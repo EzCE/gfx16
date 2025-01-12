@@ -42,6 +42,13 @@ extern "C" {
 #define GFX16_OS_DARKGRAY   (0x52AA)
 
 /**
+ * @brief Inverts the contents of the screen.
+ * 
+ */
+#define gfx16_InvertScreen() \
+gfx16_FillInvertedRectangle_NoClip(0, 0, 320, 240)
+
+/**
  * @brief Sets up the display for gfx16. It is necessary to call this function before using the library.
  * 
  */
@@ -282,13 +289,22 @@ void gfx16_InvertedRectangle(uint24_t x, uint8_t y, uint16_t width, uint8_t heig
 void gfx16_InvertedRectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, uint8_t height);
 
 /**
- * @brief Draws a sprite.
+ * @brief Draws a clipped sprite.
  * 
  * @param sprite Pointer to an initialized sprite structure.
  * @param x X coordinate of the sprite.
  * @param y Y coordinate of the sprite.
  */
-void gfx16_Sprite(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
+void gfx16_Sprite(const gfx_sprite_t *sprite, int x, int y);
+
+/**
+ * @brief Draws an unclipped sprite.
+ * 
+ * @param sprite Pointer to an initialized sprite structure.
+ * @param x X coordinate of the sprite.
+ * @param y Y coordinate of the sprite.
+ */
+void gfx16_Sprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
 
 #ifdef __cplusplus
 }

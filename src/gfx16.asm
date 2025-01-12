@@ -37,8 +37,10 @@ library GFX16, 1
     export gfx16_InvertedVertLine_NoClip
     export gfx16_InvertedHorizLine
     export gfx16_InvertedHorizLine_NoClip
+    export gfx16_InvertedRectangle
     export gfx16_InvertedRectangle_NoClip
     export gfx16_Sprite
+    export gfx16_Sprite_NoClip
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -64,6 +66,14 @@ end macro
 macro isHLLessThanDE?
     or a, a
     sbc hl, de
+    add hl, hl
+    jp po, $ + 5
+    ccf
+end macro
+
+macro isHLLessThanBC?
+    or a, a
+    sbc hl, bc
     add hl, hl
     jp po, $ + 5
     ccf
@@ -126,7 +136,7 @@ spiCmd:
     ld hl, mpSpiData or spiValid shl 8
     ld b, 3
 
-.loop:	
+.loop:
     rla
     rla
     rla
@@ -1055,7 +1065,60 @@ _InvertedRectangle_NoClip:
 
 ;-------------------------------------------------------------------------------
 gfx16_Sprite:
-; Draws a sprite.
+; Draws a clipped sprite.
+; Arguments:
+;  arg0: Pointer to an initialized sprite structure.
+;  arg1: X coordinate of the sprite.
+;  arg2: Y coordinate of the sprite.
+; Returns:
+;  None
+    push ix
+    call _ClipCoordinates
+    pop ix
+    ret nc
+    ld (.amount), a ; skip amount
+    ld b, (iy + 0)
+    ld c, (iy + 3)
+    ld de, (iy + 6)
+    ld iy, 3
+    add iy, sp
+    push de
+    call _getVramAddr
+    ex de, hl
+    pop hl
+    ld iyl, c
+    push de
+
+.spriteLoop:
+    ldi
+    inc c
+    ldi
+    xor a, a
+    or a, c
+    jr nz, .spriteLoop
+    pop de
+    dec b
+    ret z
+    ex de, hl
+    push de ; sprite ptr
+    ld de, ti.lcdHeight * 2
+    add hl, de
+    pop de ; de = sprite ptr
+    push hl ; vram ptr
+    ex de, hl ; hl = sprite ptr
+    ld c, iyl
+    ld de, 0
+
+.amount := $ - 3
+    add hl, de
+    add hl, de
+    pop de ; de = vram ptr
+    push de
+    jr .spriteLoop
+
+;-------------------------------------------------------------------------------
+gfx16_Sprite_NoClip:
+; Draws an unclipped sprite.
 ; Arguments:
 ;  arg0: Pointer to an initialized sprite structure.
 ;  arg1: X coordinate of the sprite.
@@ -1120,7 +1183,7 @@ _getVramAddr: ; returns address in hl
 
 ;-------------------------------------------------------------------------------
 _Maximum:
-; Calculate the resut of a signed comparison
+; Calculate the result of a signed comparison
 ; Inputs:
 ;  DE, HL = numbers
 ; Oututs:
@@ -1139,7 +1202,7 @@ _Maximum:
 
 ;-------------------------------------------------------------------------------
 _Minimum:
-; Calculate the resut of a signed comparison
+; Calculate the result of a signed comparison
 ; Inputs:
 ;  DE, HL = numbers
 ; Oututs:
@@ -1197,6 +1260,133 @@ _SignedCompare:
     ret
 
 ;-------------------------------------------------------------------------------
+_ClipCoordinates:
+; Clipping stuff
+; Arguments:
+;  arg0 : Pointer to sprite structure
+;  arg1 : X coordinate
+;  arg2 : Y coordinate
+; Returns:
+;  A    : How much to add to the sprite per iteration
+;  arg1 : New Y coordinate
+;  arg2 : New X coordinate
+;  NC   : If offscreen
+    ld ix, 6 ; get pointer to arguments
+    lea iy, ix - 6
+    add ix, sp
+    ld hl, (ix + 3)
+    ld a, (hl)
+    ld de, _TmpWidth + 3
+    ld (de), a ; save _TmpHeight
+    ld (.height1), a ; save tmpSpriteHeight
+    ld (.height2), a ; save again in a different spot
+    add iy, de
+    lea iy, iy - 3
+    inc hl
+    ld a, (hl)
+    ld (iy + 0), a ; save tmpWidth
+    inc hl
+    ld (iy + 6), hl ; save a ptr to the sprite data to change offsets
+    ld bc, (ix + 9)
+    ld hl, (_YMin)
+    isHLLessThanBC
+    jr c, .notop
+    ld hl, (iy + 3) ; hl = tmpHeight
+    add hl, bc
+    ex de, hl
+    ld hl, (_YMin)
+    isHLLessThanDE
+    ret nc ; bc = y location
+    ld hl, (_YMin) ; ymin
+    or a, a
+    sbc hl, bc
+    ld a, (iy + 3)
+    sub a, l
+    ld (iy + 3), a
+    ex de, hl
+    ld hl, (iy + 6)
+    add hl, de
+    add hl, de ; Add twice for 16bpp
+    ld (iy + 6), hl ; store new ptr
+    ld bc, (_YMin) ; new y location ymin
+
+.notop:
+    push bc
+    pop hl ; hl = y coordinate
+    ld de, (_YMax)
+    isHLLessThanDE
+    ret nc ; return if offscreen on bottom
+    ld hl, (iy + 3) ; bc = y coordinate, hl = tmpHeight
+    add hl, bc
+    ld de, (_YMax)
+    isHLLessThanDE
+    jr c, .notbottom ; is partially clipped bottom?
+    ex de, hl ; bc = y coordinate, hl = ymax
+    sbc hl, bc
+    ld (iy + 3), hl ; store new tmpHeight
+
+.notbottom:
+    ld hl, (ix + 6) ; hl = x coordinate
+    ld de, (_XMin)
+    isHLLessThanDE
+    ld hl, (ix + 6) ; hl = x coordinate
+    jr nc, .noleft ; is partially clipped left?
+    ld de, (iy + 0) ; de = _TmpWidth
+    add hl, de
+    ld de, (_XMin)
+    ex de, hl
+    isHLLessThanDE
+    ret nc ; return if offscreen
+    ld de, (ix + 6) ; de = x coordinate
+    ld hl, (_XMin)
+    or a, a
+    sbc hl, de
+    ex de, hl ; calculate new offset
+    ld hl, (iy + 0) ; hl = _TmpWidth
+    or a, a
+    sbc hl, de
+    ld (iy + 0), hl ; save new width
+    ld d, 0
+
+.height1 := $ - 1
+    mlt de
+    ld hl, (iy + 6) ; hl = sprite ptr
+    add hl, de
+    add hl, de
+    ld (iy + 6), hl
+    ld hl, (_XMin)
+    ld (ix + 6), hl ; save min x coordinate
+
+.noleft:
+    ld de, (_XMax) ; de = xmax
+    isHLLessThanDE
+    ret nc ; return if offscreen
+    ld hl, (ix + 6) ; hl = x coordinate
+    ld de, (iy + 0) ; de = _TmpWidth
+    add hl, de
+    ld de, (_XMax)
+    ex de, hl
+    isHLLessThanDE
+    jr nc, .noright ; is partially clipped right?
+    ld hl, (_XMax) ; clip on the right
+    ld de, (ix + 6)
+    ccf
+    sbc hl, de
+    ld (iy + 0), hl ; save new _TmpWidth
+
+.noright:
+    ld a, (iy + 3)
+    or a, a
+    ret z ; quit if new tmpHeight is 0 (edge case)
+    ld a, 0
+
+.height2 := $ - 1
+    ld (ix + 9), bc
+    sub a, (iy + 3) ; compute new x width
+    scf ; set carry for success
+    ret
+
+;-------------------------------------------------------------------------------
 ; Internal library data
 ;-------------------------------------------------------------------------------
 
@@ -1217,6 +1407,15 @@ _XMax:
     dl ti.lcdWidth
 _YMax:
     dl ti.lcdHeight
+
+_TmpWidth:
+    dl 0
+
+_TmpHeight:
+    dl 0
+
+_TmpSprite:
+    dl 0
 
 _ClipRegion_Full: ; x, y, w, h
     dl 0
