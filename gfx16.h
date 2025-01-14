@@ -298,6 +298,15 @@ void gfx16_InvertedRectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, uint8
 void gfx16_Sprite(const gfx_sprite_t *sprite, int x, int y);
 
 /**
+ * @brief Draws a clipped transparent sprite.
+ * 
+ * @param sprite Pointer to an initialized sprite structure.
+ * @param x X coordinate of the sprite.
+ * @param y Y coordinate of the sprite.
+ */
+void gfx16_TransparentSprite(const gfx_sprite_t *sprite, int x, int y);
+
+/**
  * @brief Draws an unclipped sprite.
  * 
  * @param sprite Pointer to an initialized sprite structure.
@@ -305,6 +314,15 @@ void gfx16_Sprite(const gfx_sprite_t *sprite, int x, int y);
  * @param y Y coordinate of the sprite.
  */
 void gfx16_Sprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
+
+/**
+ * @brief Draws an unclipped transparent sprite.
+ * 
+ * @param sprite Pointer to an initialized sprite structure.
+ * @param x X coordinate of the sprite.
+ * @param y Y coordinate of the sprite.
+ */
+void gfx16_TransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
 
 #ifdef __cplusplus
 }

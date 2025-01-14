@@ -40,7 +40,9 @@ library GFX16, 1
     export gfx16_InvertedRectangle
     export gfx16_InvertedRectangle_NoClip
     export gfx16_Sprite
+    export gfx16_TransparentSprite
     export gfx16_Sprite_NoClip
+    export gfx16_TransparentSprite_NoClip
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -1117,6 +1119,85 @@ gfx16_Sprite:
     jr .spriteLoop
 
 ;-------------------------------------------------------------------------------
+gfx16_TransparentSprite:
+; Draws a clipped transparent sprite.
+; Arguments:
+;  arg0: Pointer to an initialized sprite structure.
+;  arg1: X coordinate of the sprite.
+;  arg2: Y coordinate of the sprite.
+; Returns:
+;  None
+    ld hl, (_TransColor)
+    ld a, l
+    ld (.chkByte1), a
+    ld a, h
+    ld (.chkByte2), a
+    push ix
+    call _ClipCoordinates
+    pop ix
+    ret nc
+    ld (.amount), a ; skip amount
+    ld b, (iy + 0)
+    ld c, (iy + 3)
+    ld de, (iy + 6)
+    ld iy, 3
+    add iy, sp
+    push de
+    call _getVramAddr
+    ex de, hl
+    pop hl
+    ld iyl, c
+    push de
+
+.spriteLoop:
+    ld a, 0
+
+.chkByte1 := $ - 1
+    cp a, (hl)
+    inc hl
+    jr nz, .draw
+    ld a, 0
+
+.chkByte2 := $ - 1
+    cp a, (hl)
+    jr nz, .draw
+    inc hl
+    inc de
+    inc de
+    dec c
+    jr .drawDone
+
+.draw:
+    dec hl
+    ldi
+    inc c
+    ldi
+    xor a, a
+    or a, c
+
+.drawDone:
+    jr nz, .spriteLoop
+    pop de
+    dec b
+    ret z
+    ex de, hl
+    push de ; sprite ptr
+    ld de, ti.lcdHeight * 2
+    add hl, de
+    pop de ; de = sprite ptr
+    push hl ; vram ptr
+    ex de, hl ; hl = sprite ptr
+    ld c, iyl
+    ld de, 0
+
+.amount := $ - 3
+    add hl, de
+    add hl, de
+    pop de ; de = vram ptr
+    push de
+    jr .spriteLoop
+
+;-------------------------------------------------------------------------------
 gfx16_Sprite_NoClip:
 ; Draws an unclipped sprite.
 ; Arguments:
@@ -1142,6 +1223,72 @@ gfx16_Sprite_NoClip:
     ldi
     xor a, a
     or a, c
+    jr nz, .spriteLoop
+    pop de
+    dec b
+    ret z
+    ex de, hl
+    push de
+    ld de, ti.lcdHeight * 2
+    add hl, de
+    pop de
+    ex de, hl
+    ld c, iyl
+    push de
+    jr .spriteLoop
+
+;-------------------------------------------------------------------------------
+gfx16_TransparentSprite_NoClip:
+; Draws an unclipped transparent sprite.
+; Arguments:
+;  arg0: Pointer to an initialized sprite structure.
+;  arg1: X coordinate of the sprite.
+;  arg2: Y coordinate of the sprite.
+; Returns:
+;  None
+    ld hl, (_TransColor)
+    ld a, l
+    ld (.chkByte1), a
+    ld a, h
+    ld (.chkByte2), a
+    ld iy, 3
+    add iy, sp
+    call _getVramAddr
+    ld de, (iy)
+    ex de, hl
+    ld bc, (hl)
+    inc hl
+    inc hl
+    ld iyl, c
+    push de
+
+.spriteLoop:
+    ld a, 0
+
+.chkByte1 := $ - 1
+    cp a, (hl)
+    inc hl
+    jr nz, .draw
+    ld a, 0
+
+.chkByte2 := $ - 1
+    cp a, (hl)
+    jr nz, .draw
+    inc hl
+    inc de
+    inc de
+    dec c
+    jr .drawDone
+
+.draw:
+    dec hl
+    ldi
+    inc c
+    ldi
+    xor a, a
+    or a, c
+
+.drawDone:
     jr nz, .spriteLoop
     pop de
     dec b
