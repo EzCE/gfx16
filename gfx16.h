@@ -324,6 +324,28 @@ void gfx16_Sprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
  */
 void gfx16_TransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y);
 
+/**
+ * @brief Draws a scaled unclipped sprite.
+ * 
+ * @param sprite Pointer to an initialized sprite structure.
+ * @param x X coordinate of the sprite.
+ * @param y Y coordinate of the sprite.
+ * @param width_scale Width scaling factor.
+ * @param height_scale Height scaling factor.
+ */
+void gfx16_ScaledSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y, uint8_t width_scale, uint8_t height_scale);
+
+/**
+ * @brief Draws a scaled unclipped transparent sprite.
+ * 
+ * @param sprite Pointer to an initialized sprite structure.
+ * @param x X coordinate of the sprite.
+ * @param y Y coordinate of the sprite.
+ * @param width_scale Width scaling factor.
+ * @param height_scale Height scaling factor.
+ */
+void gfx16_ScaledTransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y, uint8_t width_scale, uint8_t height_scale);
+
 #ifdef __cplusplus
 }
 #endif

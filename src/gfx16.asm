@@ -43,6 +43,8 @@ library GFX16, 1
     export gfx16_TransparentSprite
     export gfx16_Sprite_NoClip
     export gfx16_TransparentSprite_NoClip
+    export gfx16_ScaledSprite_NoClip
+    export gfx16_ScaledTransparentSprite_NoClip
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -1244,6 +1246,150 @@ gfx16_TransparentSprite_NoClip:
 ;  arg0: Pointer to an initialized sprite structure.
 ;  arg1: X coordinate of the sprite.
 ;  arg2: Y coordinate of the sprite.
+; Returns:
+;  None
+    ld hl, (_TransColor)
+    ld a, l
+    ld (.chkByte1), a
+    ld a, h
+    ld (.chkByte2), a
+    ld iy, 3
+    add iy, sp
+    call _getVramAddr
+    ld de, (iy)
+    ex de, hl
+    ld bc, (hl)
+    inc hl
+    inc hl
+    ld iyl, c
+    push de
+
+.spriteLoop:
+    ld a, 0
+
+.chkByte1 := $ - 1
+    cp a, (hl)
+    inc hl
+    jr nz, .draw
+    ld a, 0
+
+.chkByte2 := $ - 1
+    cp a, (hl)
+    jr nz, .draw
+    inc hl
+    inc de
+    inc de
+    dec c
+    jr .drawDone
+
+.draw:
+    dec hl
+    ldi
+    inc c
+    ldi
+    xor a, a
+    or a, c
+
+.drawDone:
+    jr nz, .spriteLoop
+    pop de
+    dec b
+    ret z
+    ex de, hl
+    push de
+    ld de, ti.lcdHeight * 2
+    add hl, de
+    pop de
+    ex de, hl
+    ld c, iyl
+    push de
+    jr .spriteLoop
+
+;-------------------------------------------------------------------------------
+gfx16_ScaledSprite_NoClip:
+; Draws a scaled unclipped sprite.
+; Arguments:
+;  arg0: Pointer to an initialized sprite structure.
+;  arg1: X coordinate of the sprite.
+;  arg2: Y coordinate of the sprite.
+;  arg3: Width scaling factor.
+;  arg4: Height scaling factor.
+; Returns:
+;  None
+    ld iy, 3
+    add iy, sp
+    call _getVramAddr
+    ld de, (iy)
+    ex de, hl
+    ld a, (iy + 12)
+    ld (.scaleHeight), a
+    ld iy, (iy + 9)
+    ld iyh, a
+    ld a, iyl
+    ld (.scaleWidth), a
+    ld bc, (hl)
+    ld a, c
+    ld (.height), a
+    push de
+    inc hl
+    inc hl
+    push hl
+
+.spriteLoop:
+    ldi
+    inc c
+    ldi
+    dec iyh
+    jr z, .heightScaled
+    dec hl ; scale not yet complete
+    dec hl
+    inc c
+    jr $ + 5
+
+.heightScaled:
+    ld iyh, 0
+
+.scaleHeight := $ - 1
+    xor a, a
+    or a, c
+    jr nz, .spriteLoop
+    dec iyl
+    jr z, .widthScaled
+    pop hl ; scale not complete
+    inc b
+    jr .skip
+
+.widthScaled:
+    pop de
+    ld iyl, 0
+
+.scaleWidth := $ - 1
+.skip:
+    pop de
+    dec b
+    ret z
+    ex de, hl
+    push de
+    ld de, ti.lcdHeight * 2
+    add hl, de
+    pop de
+    ex de, hl
+    ld c, 0
+
+.height := $ - 1
+    push de
+    push hl
+    jr .spriteLoop
+
+;-------------------------------------------------------------------------------
+gfx16_ScaledTransparentSprite_NoClip:
+; Draws a scaled unclipped transparent sprite.
+; Arguments:
+;  arg0: Pointer to an initialized sprite structure.
+;  arg1: X coordinate of the sprite.
+;  arg2: Y coordinate of the sprite.
+;  arg3: Width scaling factor.
+;  arg4: Height scaling factor.
 ; Returns:
 ;  None
     ld hl, (_TransColor)
