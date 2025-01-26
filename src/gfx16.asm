@@ -1402,11 +1402,19 @@ gfx16_ScaledTransparentSprite_NoClip:
     call _getVramAddr
     ld de, (iy)
     ex de, hl
+    ld a, (iy + 12)
+    ld (.scaleHeight), a
+    ld iy, (iy + 9)
+    ld iyh, a
+    ld a, iyl
+    ld (.scaleWidth), a
     ld bc, (hl)
-    inc hl
-    inc hl
-    ld iyl, c
+    ld a, c
+    ld (.height), a
     push de
+    inc hl
+    inc hl
+    push hl
 
 .spriteLoop:
     ld a, 0
@@ -1431,11 +1439,34 @@ gfx16_ScaledTransparentSprite_NoClip:
     ldi
     inc c
     ldi
-    xor a, a
-    or a, c
 
 .drawDone:
+    dec iyh
+    jr z, .heightScaled
+    dec hl ; scale not yet complete
+    dec hl
+    inc c
+    jr $ + 5
+
+.heightScaled:
+    ld iyh, 0
+
+.scaleHeight := $ - 1
+    xor a, a
+    or a, c
     jr nz, .spriteLoop
+    dec iyl
+    jr z, .widthScaled
+    pop hl ; scale not complete
+    inc b
+    jr .skip
+
+.widthScaled:
+    pop de
+    ld iyl, 0
+
+.scaleWidth := $ - 1
+.skip:
     pop de
     dec b
     ret z
@@ -1445,8 +1476,11 @@ gfx16_ScaledTransparentSprite_NoClip:
     add hl, de
     pop de
     ex de, hl
-    ld c, iyl
+    ld c, 0
+
+.height := $ - 1
     push de
+    push hl
     jr .spriteLoop
 
 ;-------------------------------------------------------------------------------
