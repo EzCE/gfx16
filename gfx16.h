@@ -346,6 +346,51 @@ void gfx16_ScaledSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y
  */
 void gfx16_ScaledTransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y, uint8_t width_scale, uint8_t height_scale);
 
+/**
+ * @brief Draws a single character at the current cursor position.
+ * 
+ * @param c Character to draw.
+ */
+void gfx16_PutChar(const char c);
+
+/**
+ * @brief Draws a string at the current cursor position.
+ * 
+ * @param string Pointer to the null-terminated string to draw.
+ */
+void gfx16_PutString(const char *string);
+
+/**
+ * @brief Draws a string at a specified cursor position.
+ * 
+ * @param string Pointer to the null-terminated string to draw.
+ * @param x Top-left cursor X coordinate.
+ * @param y Top-left cursor Y coordinate.
+ */
+void gfx16_PutStringXY(const char *string, uint24_t x, uint8_t y);
+
+/**
+ * @brief Sets the text cursor position.
+ * 
+ * @param x Top-left cursor X coordinate.
+ * @param y Top-left cursor Y coordinate.
+ */
+void gfx16_SetTextXY(uint24_t x, uint8_t y);
+
+/**
+ * @brief Sets the text foreground color.
+ * 
+ * @param color New text foreground color.
+ */
+void gfx16_SetTextFGColor(uint16_t color);
+
+/**
+ * @brief Sets the text background color.
+ * 
+ * @param color New text background color.
+ */
+void gfx16_SetTextBGColor(uint16_t color);
+
 #ifdef __cplusplus
 }
 #endif

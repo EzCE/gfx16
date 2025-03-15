@@ -45,6 +45,12 @@ library GFX16, 1
     export gfx16_TransparentSprite_NoClip
     export gfx16_ScaledSprite_NoClip
     export gfx16_ScaledTransparentSprite_NoClip
+    export gfx16_PutChar
+    export gfx16_PutString
+    export gfx16_PutStringXY
+    export gfx16_SetTextXY
+    export gfx16_SetTextFGColor
+    export gfx16_SetTextBGColor
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -1484,6 +1490,202 @@ gfx16_ScaledTransparentSprite_NoClip:
     jr .spriteLoop
 
 ;-------------------------------------------------------------------------------
+gfx16_PutChar:
+; Draws a single character at the current cursor position.
+; Arguments:
+;  arg0: Character to draw.
+; Returns:
+;  None
+    pop hl
+    pop de
+    push de ; e = char
+    push hl
+
+_PutChar:
+    or a, a
+    sbc hl, hl
+    ld l, e
+    push hl
+    ld bc, (_CharSpacing)
+    add hl, bc
+    ld b, (hl)
+    ld hl, ti.vRam
+    ld de, 0
+
+.cursorX := $ - 3
+    ; set a = ((x & $100) * lcdHeight) >> 8
+    ld a, d
+    ld d, ti.lcdHeight
+    rra
+    sbc a, a
+    and a, d
+    mlt de
+    add hl, de
+    add hl, de
+    ; add ((x & $100) * lcdHeight + y) * 2
+    ld d, a
+    ld e, 0
+
+.cursorY := $ - 1
+    add hl, de
+    add hl, de
+    push hl
+    ld de, 0
+    ld e, b
+    ld hl, (.cursorX)
+    add hl, de
+    ld (.cursorX), hl
+    pop de
+    pop hl
+    ld h, 8
+    mlt hl
+    push bc
+    ld bc, (_TextData)
+    add hl, bc
+    pop bc
+
+.loop:
+    push de
+    ld a, (hl)
+    ld c, 8
+    push af
+
+.loopByte:
+    pop af
+    add a, a
+    push af
+    jr c, .drawFG
+    ld a, $FF
+
+.textBGColorLo := $ - 1
+    ld (de), a
+    inc de
+    ld a, $FF
+
+.textBGColorHi := $ - 1
+    jr .drawDone
+
+.drawFG:
+    ld a, $00
+
+.textFGColorLo := $ - 1
+    ld (de), a
+    inc de
+    ld a, $00
+
+.textFGColorHi := $ - 1
+
+.drawDone:
+    ld (de), a
+    inc de
+    ld a, c
+    sub a, 1
+    ld c, a
+    jr nz, .loopByte
+    pop af
+    inc hl
+    pop de
+    push hl
+    ld hl, ti.lcdHeight * 2
+    add hl, de
+    ex de, hl
+    pop hl
+    djnz .loop
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_PutStringXY:
+; Draws a string at a specified cursor position.
+; Arguments:
+;  arg0: Pointer to the null-terminated string to draw.
+;  arg1: Top-left cursor X coordinate.
+;  arg2: Top-left cursor Y coordinate.
+; Returns:
+;  None
+    pop iy
+    pop bc
+    call gfx16_SetTextXY
+    push bc
+    ex (sp), hl
+    push iy
+    jr gfx16_PutString.loop
+
+;-------------------------------------------------------------------------------
+gfx16_PutString:
+; Draws a string at the current cursor position.
+; Arguments:
+;  arg0: Pointer to the null-terminated string to draw.
+; Returns:
+;  None
+    pop de
+    pop hl
+    push hl
+    push de
+
+.loop:
+    xor a, a
+    ld e, (hl)
+    or a, e
+    ret z
+    push hl
+    call _PutChar
+    pop hl
+    inc hl
+    jr .loop
+
+;-------------------------------------------------------------------------------
+gfx16_SetTextXY:
+; Sets the text cursor position.
+; Arguments:
+;  arg0: Top-left cursor X coordinate.
+;  arg1: Top-left cursor Y coordinate.
+; Returns:
+;  None
+    pop de
+    pop hl
+    ld (_PutChar.cursorX), hl
+    ex (sp), hl
+    push hl
+    push de
+    ld a, l
+    ld (_PutChar.cursorY), a
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetTextFGColor:
+; Sets the text foreground color.
+; Arguments:
+;  arg0: New text foreground color.
+; Returns:
+;  None
+    pop de
+    pop hl
+    push hl
+    push de
+    ld a, l
+    ld (_PutChar.textFGColorLo), a
+    ld a, h
+    ld (_PutChar.textFGColorHi), a
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetTextBGColor:
+; Sets the text background color.
+; Arguments:
+;  arg0: New text background color.
+; Returns:
+;  None
+    pop de
+    pop hl
+    push hl
+    push de
+    ld a, l
+    ld (_PutChar.textBGColorLo), a
+    ld a, h
+    ld (_PutChar.textBGColorHi), a
+    ret
+
+;-------------------------------------------------------------------------------
 ; Inner library routines
 ;-------------------------------------------------------------------------------
 
@@ -1763,3 +1965,151 @@ _LcdTiming:
 ; V = (LPP + 1) + (VSW + 1) + VFP + VBP = 320 + 1 + 179 + 0 = 500
 ; CC = H * V * PCD * 2 = 400 * 500 * 2 * 2 = 800000
 ; Hz = 48000000 / CC = 60
+
+_CharSpacing:
+    dl _DefaultCharSpacing
+_TextData:
+    dl _DefaultTextData
+
+_DefaultCharSpacing:
+    ;  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F
+    db 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ; 0
+    db 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ; 1
+    db 3, 4, 6, 8, 8, 8, 8, 5, 5, 5, 8, 7, 4, 7, 3, 8 ; 2
+    db 8, 7, 8, 8, 8, 8, 8, 8, 8, 8, 3, 4, 6, 7, 6, 7 ; 3
+    db 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ; 4
+    db 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 5, 8, 5, 8, 8 ; 5
+    db 4, 8, 8, 8, 8, 8, 8, 8, 8, 5, 8, 8, 5, 8, 8, 8 ; 6
+    db 8, 8, 8, 8, 7, 8, 8, 8, 8, 8, 8, 7, 3, 7, 8, 8 ; 7
+    db 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ; 8
+    db 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ; 9
+
+_DefaultTextData:
+    db $00, $00, $00, $00, $00, $00, $00, $00 ;  
+    db $7E, $81, $AD, $8D, $8D, $AD, $81, $7E ; ☺
+    db $7E, $FF, $D3, $F3, $F3, $D3, $FF, $7E ; ☻
+    db $70, $F8, $FC, $7E, $FC, $F8, $70, $00 ; ♥
+    db $10, $38, $7C, $FE, $7C, $38, $10, $00 ; ♦
+    db $18, $59, $F9, $FF, $F9, $59, $18, $00 ; ♣
+    db $08, $1D, $3D, $7F, $7F, $3D, $1D, $08 ; ♠
+    db $00, $00, $18, $3C, $3C, $18, $00, $00 ; •
+    db $FF, $FF, $E7, $C3, $C3, $E7, $FF, $FF ; ◘
+    db $00, $3C, $66, $42, $42, $66, $3C, $00 ; ○
+    db $FF, $C3, $99, $BD, $BD, $99, $C3, $FF ; ◙
+    db $0E, $1F, $11, $11, $BF, $FE, $E0, $F0 ; ♂
+    db $00, $72, $FA, $8F, $8F, $FA, $72, $00 ; ♀
+    db $03, $07, $FF, $FE, $A0, $A0, $E0, $E0 ; ♪
+    db $03, $FF, $FE, $A0, $A0, $A6, $FE, $FC ; ♫
+    db $99, $5A, $3C, $E7, $E7, $3C, $5A, $99 ; *
+    db $FE, $7C, $7C, $38, $38, $10, $10, $00 ; ►
+    db $10, $10, $38, $38, $7C, $7C, $FE, $00 ; ◄
+    db $00, $24, $66, $FF, $FF, $66, $24, $00 ; ↕
+    db $00, $FA, $FA, $00, $00, $FA, $FA, $00 ; ‼
+    db $60, $F0, $90, $FE, $FE, $80, $FE, $FE ; ¶
+    db $01, $79, $FD, $A5, $A5, $BF, $9E, $80 ; §
+    db $00, $0E, $0E, $0E, $0E, $0E, $0E, $00 ; ▬
+    db $01, $29, $6D, $FF, $FF, $6D, $29, $01 ; ↨
+    db $00, $20, $60, $FE, $FE, $60, $20, $00 ; ↑
+    db $00, $08, $0C, $FE, $FE, $0C, $08, $00 ; ↓
+    db $10, $10, $10, $54, $7C, $38, $10, $00 ; →
+    db $10, $38, $7C, $54, $10, $10, $10, $00 ; ←
+    db $3C, $3C, $04, $04, $04, $04, $04, $00 ; └
+    db $10, $38, $7C, $10, $10, $7C, $38, $10 ; ↔
+    db $0C, $1C, $3C, $7C, $7C, $3C, $1C, $0C ; ▲
+    db $60, $70, $78, $7C, $7C, $78, $70, $60 ; ▼
+    db $00, $00, $00, $00, $00, $00, $00, $00 ;
+    db $FA, $FA, $00, $00, $00, $00, $00, $00 ; !
+    db $E0, $E0, $00, $E0, $E0, $00, $00, $00 ; "
+    db $28, $FE, $FE, $28, $FE, $FE, $28, $00 ; #
+    db $24, $74, $54, $D6, $D6, $5C, $48, $00 ; $
+    db $62, $66, $0C, $18, $30, $66, $46, $00 ; %
+    db $0C, $5E, $F2, $BA, $EC, $5E, $12, $00 ; &
+    db $00, $20, $E0, $C0, $00, $00, $00, $00 ; '
+    db $38, $7C, $C6, $82, $00, $00, $00, $00 ; (
+    db $82, $C6, $7C, $38, $00, $00, $00, $00 ; )
+    db $10, $54, $7C, $38, $38, $7C, $54, $10 ; *
+    db $18, $18, $7E, $7E, $18, $18, $00, $00 ; +
+    db $01, $07, $06, $00, $00, $00, $00, $00 ; ,
+    db $10, $10, $10, $10, $10, $10, $00, $00 ; -
+    db $06, $06, $00, $00, $00, $00, $00, $00 ; .
+    db $06, $0C, $18, $30, $60, $C0, $80, $00 ; /
+    db $7C, $FE, $9A, $B2, $E2, $FE, $7C, $00 ; 0
+    db $02, $42, $FE, $FE, $02, $02, $00, $00 ; 1
+    db $4E, $DE, $92, $92, $92, $F2, $62, $00 ; 2
+    db $82, $82, $92, $92, $92, $FE, $6C, $00 ; 3
+    db $78, $78, $08, $08, $FE, $FE, $08, $00 ; 4
+    db $E4, $E6, $A2, $A2, $A2, $BE, $9C, $00 ; 5
+    db $7C, $FE, $92, $92, $92, $9E, $0C, $00 ; 6
+    db $80, $80, $86, $8E, $98, $F0, $E0, $00 ; 7
+    db $6C, $FE, $92, $92, $92, $FE, $6C, $00 ; 8
+    db $60, $F2, $92, $92, $92, $FE, $7C, $00 ; 9
+    db $66, $66, $00, $00, $00, $00, $00, $00 ; :
+    db $01, $67, $66, $00, $00, $00, $00, $00 ; ;
+    db $10, $38, $6C, $C6, $82, $00, $00, $00 ; <
+    db $28, $28, $28, $28, $28, $28, $00, $00 ; =
+    db $82, $C6, $6C, $38, $10, $00, $00, $00 ; >
+    db $40, $C0, $9A, $BA, $E0, $40, $00, $00 ; ?
+    db $7C, $FE, $82, $BA, $BA, $FA, $7A, $00 ; @
+    db $3E, $7E, $C8, $88, $C8, $7E, $3E, $00 ; A
+    db $FE, $FE, $92, $92, $92, $FE, $6C, $00 ; B
+    db $7C, $FE, $82, $82, $82, $C6, $44, $00 ; C
+    db $FE, $FE, $82, $82, $C6, $7C, $38, $00 ; D
+    db $FE, $FE, $92, $92, $92, $82, $82, $00 ; E
+    db $FE, $FE, $90, $90, $90, $80, $80, $00 ; F
+    db $7C, $FE, $82, $82, $8A, $CE, $4C, $00 ; G
+    db $FE, $FE, $10, $10, $10, $FE, $FE, $00 ; H
+    db $00, $82, $82, $FE, $FE, $82, $82, $00 ; I
+    db $04, $06, $02, $02, $02, $FE, $FC, $00 ; J
+    db $FE, $FE, $10, $38, $6C, $C6, $82, $00 ; K
+    db $FE, $FE, $02, $02, $02, $02, $02, $00 ; L
+    db $FE, $FE, $70, $38, $70, $FE, $FE, $00 ; M
+    db $FE, $FE, $60, $30, $18, $FE, $FE, $00 ; N
+    db $7C, $FE, $82, $82, $82, $FE, $7C, $00 ; O
+    db $FE, $FE, $90, $90, $90, $F0, $60, $00 ; P
+    db $7C, $FE, $82, $8E, $86, $FF, $7D, $00 ; Q
+    db $FE, $FE, $90, $98, $9C, $F6, $62, $00 ; R
+    db $64, $F6, $92, $92, $92, $DE, $4C, $00 ; S
+    db $80, $80, $80, $FE, $FE, $80, $80, $80 ; T
+    db $FE, $FE, $02, $02, $02, $FE, $FE, $00 ; U
+    db $F8, $FC, $06, $06, $06, $FC, $F8, $00 ; V
+    db $FC, $FE, $06, $0C, $06, $FE, $FC, $00 ; W
+    db $C6, $EE, $38, $10, $38, $EE, $C6, $00 ; X
+    db $E2, $F2, $16, $1C, $18, $F0, $E0, $00 ; Y
+    db $82, $86, $8E, $9A, $B2, $E2, $C2, $00 ; Z
+    db $FE, $FE, $82, $82, $00, $00, $00, $00 ; [
+    db $80, $C0, $60, $30, $18, $0C, $06, $00 ; \
+    db $82, $82, $FE, $FE, $00, $00, $00, $00 ; ]
+    db $10, $30, $60, $C0, $60, $30, $10, $00 ; ^
+    db $01, $01, $01, $01, $01, $01, $01, $01 ; _
+    db $C0, $E0, $20, $00, $00, $00, $00, $00 ; `
+    db $04, $2E, $2A, $2A, $2A, $3E, $1E, $00 ; a
+    db $FE, $FE, $12, $12, $12, $1E, $0C, $00 ; b
+    db $1C, $3E, $22, $22, $22, $36, $14, $00 ; c
+    db $0C, $1E, $12, $12, $12, $FE, $FE, $00 ; d
+    db $1C, $3E, $2A, $2A, $2A, $3A, $18, $00 ; e
+    db $00, $12, $7E, $FE, $92, $C0, $40, $00 ; f
+    db $19, $3D, $25, $25, $25, $3F, $3E, $00 ; g
+    db $FE, $FE, $20, $20, $20, $3E, $1E, $00 ; h
+    db $22, $BE, $BE, $02, $00, $00, $00, $00 ; i
+    db $02, $03, $01, $01, $01, $BF, $BE, $00 ; j
+    db $FE, $FE, $08, $18, $3C, $26, $02, $00 ; k
+    db $82, $FE, $FE, $02, $00, $00, $00, $00 ; l
+    db $3E, $3E, $18, $1E, $38, $3E, $1E, $00 ; m
+    db $3E, $3E, $20, $20, $20, $3E, $1E, $00 ; n
+    db $1C, $3E, $22, $22, $22, $3E, $1C, $00 ; o
+    db $3F, $3F, $24, $24, $24, $3C, $18, $00 ; p
+    db $18, $3C, $24, $24, $24, $3F, $3F, $00 ; q
+    db $3E, $3E, $20, $20, $20, $30, $10, $00 ; r
+    db $12, $3A, $2A, $2A, $2A, $2E, $24, $00 ; s
+    db $20, $20, $FC, $FE, $22, $22, $00, $00 ; t
+    db $3C, $3E, $02, $02, $02, $3E, $3E, $00 ; u
+    db $38, $3C, $06, $06, $06, $3C, $38, $00 ; v
+    db $3C, $3E, $06, $0C, $06, $3E, $3C, $00 ; w
+    db $22, $36, $1C, $08, $1C, $36, $22, $00 ; x
+    db $39, $3D, $05, $05, $05, $3F, $3E, $00 ; y
+    db $22, $26, $2E, $2A, $3A, $32, $22, $00 ; z
+    db $10, $10, $7C, $EE, $82, $82, $00, $00 ; {
+    db $EE, $EE, $00, $00, $00, $00, $00, $00 ; |
+    db $82, $82, $EE, $7C, $10, $10, $00, $00 ; }
+    db $40, $C0, $80, $C0, $40, $C0, $80, $00 ; ~
+    db $0E, $1E, $32, $62, $32, $1E, $0E, $00 ; △
