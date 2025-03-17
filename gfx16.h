@@ -378,6 +378,14 @@ void gfx16_PutStringXY(const char *string, uint24_t x, uint8_t y);
 void gfx16_SetTextXY(uint24_t x, uint8_t y);
 
 /**
+ * @brief Sets the text scaling factors.
+ * 
+ * @param width New text width scale factor.
+ * @param height New text height scale factor.
+ */
+void gfx16_SetTextScale(uint8_t width, uint8_t height);
+
+/**
  * @brief Sets the text foreground color.
  * 
  * @param color New text foreground color.
@@ -390,6 +398,13 @@ void gfx16_SetTextFGColor(uint16_t color);
  * @param color New text background color.
  */
 void gfx16_SetTextBGColor(uint16_t color);
+
+/**
+ * @brief Sets the text transparent color.
+ * 
+ * @param color New text transparent color.
+ */
+void gfx16_SetTextTransparentColor(uint16_t color);
 
 #ifdef __cplusplus
 }

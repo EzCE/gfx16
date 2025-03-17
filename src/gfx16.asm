@@ -49,8 +49,10 @@ library GFX16, 1
     export gfx16_PutString
     export gfx16_PutStringXY
     export gfx16_SetTextXY
+    export gfx16_SetTextScale
     export gfx16_SetTextFGColor
     export gfx16_SetTextBGColor
+    export gfx16_SetTextTransparentColor
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -1502,6 +1504,9 @@ gfx16_PutChar:
     push hl
 
 _PutChar:
+    ld iy, $0101
+
+.scaleInitial := $ - 3
     or a, a
     sbc hl, hl
     ld l, e
@@ -1532,6 +1537,8 @@ _PutChar:
     push hl
     ld de, 0
     ld e, b
+    ld d, iyl
+    mlt de
     ld hl, (.cursorX)
     add hl, de
     ld (.cursorX), hl
@@ -1545,9 +1552,10 @@ _PutChar:
     pop bc
 
 .loop:
+    push hl
     push de
     ld a, (hl)
-    ld c, 8
+    ld c, 8 ; height
     push af
 
 .loopByte:
@@ -1555,43 +1563,71 @@ _PutChar:
     add a, a
     push af
     jr c, .drawFG
-    ld a, $FF
+    ld hl, $FFFF
 
-.textBGColorLo := $ - 1
-    ld (de), a
-    inc de
-    ld a, $FF
-
-.textBGColorHi := $ - 1
-    jr .drawDone
+.textBGColor := $ - 3
+    jr .draw
 
 .drawFG:
-    ld a, $00
+    ld hl, $0000
 
-.textFGColorLo := $ - 1
+.textFGColor := $ - 3
+.draw:
+    push bc
+    ld bc, $FFFF
+
+.textTransparentColor := - 3
+    or a, a
+    push hl
+    sbc.sis hl, bc
+    pop hl
+    pop bc
+    jr nz, .putPixel
+    inc de
+    jr .drawDone
+
+.putPixel:
+    ld a, l
     ld (de), a
     inc de
-    ld a, $00
-
-.textFGColorHi := $ - 1
+    ld a, h
+    ld (de), a
 
 .drawDone:
-    ld (de), a
     inc de
-    ld a, c
-    sub a, 1
-    ld c, a
+    dec iyh
+    jr nz, .draw
+
+.heightScaled:
+    ld iyh, 1
+
+.scaleHeight := $ - 1
+    dec c
+    xor a, a
+    or a, c
     jr nz, .loopByte
     pop af
-    inc hl
-    pop de
-    push hl
-    ld hl, ti.lcdHeight * 2
+    pop hl ; vram
+    pop de ; char data
+    dec iyl
+    jr z, .widthScaled
+    inc b
+    jr .skip
+
+.widthScaled:
+    inc de
+    ld iyl, 1
+
+.scaleWidth := $ - 1
+.skip:
+    dec b
+    ret z
+    push de
+    ld de, ti.lcdHeight * 2
     add hl, de
     ex de, hl
-    pop hl
-    djnz .loop
-    ret
+    pop hl ; character data
+    jr .loop
 
 ;-------------------------------------------------------------------------------
 gfx16_PutStringXY:
@@ -1652,6 +1688,33 @@ gfx16_SetTextXY:
     ret
 
 ;-------------------------------------------------------------------------------
+gfx16_SetTextScale:
+; Sets the text scaling factors.
+; Arguments:
+;  arg0: New text width scale factor.
+;  arg1: New text height scale factor.
+; Returns:
+;  None
+    pop de
+    pop hl
+    ld a, l
+    or a, a
+    jr z, .skipWidth
+    ld (_PutChar.scaleWidth), a
+    ld (_PutChar.scaleInitial), hl
+
+.skipWidth:
+    ex (sp), hl
+    push hl
+    push de
+    ld a, l
+    or a, a
+    ret z
+    ld (_PutChar.scaleHeight), a
+    ld (_PutChar.scaleInitial + 1), a
+    ret
+
+;-------------------------------------------------------------------------------
 gfx16_SetTextFGColor:
 ; Sets the text foreground color.
 ; Arguments:
@@ -1662,10 +1725,7 @@ gfx16_SetTextFGColor:
     pop hl
     push hl
     push de
-    ld a, l
-    ld (_PutChar.textFGColorLo), a
-    ld a, h
-    ld (_PutChar.textFGColorHi), a
+    ld (_PutChar.textFGColor), hl
     ret
 
 ;-------------------------------------------------------------------------------
@@ -1679,10 +1739,21 @@ gfx16_SetTextBGColor:
     pop hl
     push hl
     push de
-    ld a, l
-    ld (_PutChar.textBGColorLo), a
-    ld a, h
-    ld (_PutChar.textBGColorHi), a
+    ld (_PutChar.textBGColor), hl
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetTextTransparentColor:
+; Sets the text transparent color.
+; Arguments:
+;  arg0: New text transparent color.
+; Returns:
+;  None
+    pop de
+    pop hl
+    push hl
+    push de
+    ld (_PutChar.textTransparentColor), hl
     ret
 
 ;-------------------------------------------------------------------------------
