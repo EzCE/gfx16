@@ -53,6 +53,10 @@ library GFX16, 1
     export gfx16_SetTextFGColor
     export gfx16_SetTextBGColor
     export gfx16_SetTextTransparentColor
+    export gfx16_SetFontSpacing
+    export gfx16_SetFontData
+    export gfx16_SetCharWidth
+    export gfx16_SetCharData
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -1754,6 +1758,82 @@ gfx16_SetTextTransparentColor:
     push hl
     push de
     ld (_PutChar.textTransparentColor), hl
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetFontSpacing:
+; Sets the font's character spacing.
+; Arguments:
+;  arg0: Pointer to array of character spacing.
+; Returns:
+;  Pointer to previous font spacing.
+    pop hl
+    pop de
+    push de
+    push hl
+    ld hl, (_CharSpacing)
+    ld (_CharSpacing), de
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetFontData:
+; Sets the font's character data.
+; Arguments:
+;  arg0: Pointer to formatted 8x8 pixel font.
+; Returns:
+;  Pointer to previous font data.
+    pop hl
+    pop de
+    push de
+    push hl
+    ld hl, (_TextData)
+    ld (_TextData), de
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetCharWidth:
+; Sets the width of an individual character in the font.
+; Arguments:
+;  arg0: Character index to modify.
+;  arg1: New width value.
+; Returns:
+;  None
+    pop de
+    pop bc
+    ex (sp), hl
+    push bc
+    push de
+    ld a, l
+    ld de, 0
+    ld e, c
+    ld hl, (_CharSpacing)
+    add hl, de
+    ld (hl), a
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_SetCharData:
+; Sets the data of an individual character in the font.
+; Arguments:
+;  arg0: Character index to modify.
+;  arg1: Pointer to formatted 8x8 pixel font.
+; Returns:
+;  None
+    pop de
+    pop bc
+    ex (sp), hl
+    push bc
+    push de
+    push hl
+    ld d, 8
+    ld e, c
+    mlt de
+    ld hl, (_TextData)
+    add hl, de
+    ex de, hl
+    pop hl
+    ld bc, 8
+    ldir
     ret
 
 ;-------------------------------------------------------------------------------

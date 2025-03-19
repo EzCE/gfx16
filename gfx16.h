@@ -406,6 +406,38 @@ void gfx16_SetTextBGColor(uint16_t color);
  */
 void gfx16_SetTextTransparentColor(uint16_t color);
 
+/**
+ * @brief Sets the font's character spacing.
+ * 
+ * @param spacing Pointer to array of character spacing.
+ * @return uint8_t* Pointer to previous font spacing.
+ */
+uint8_t *gfx16_SetFontSpacing(const uint8_t *spacing);
+
+/**
+ * @brief Sets the font's character data.
+ * 
+ * @param data Pointer to formatted 8x8 pixel font.
+ * @return uint8_t* Pointer to previous font data.
+ */
+uint8_t *gfx16_SetFontData(const uint8_t *data);
+
+/**
+ * @brief Sets the width of an individual character in the font.
+ * 
+ * @param index Character index to modify.
+ * @param width New width value.
+ */
+void gfx16_SetCharWidth(char index, uint8_t width);
+
+/**
+ * @brief Sets the data of an individual character in the font.
+ * 
+ * @param index Character index to modify.
+ * @param data Pointer to formatted 8x8 pixel font.
+ */
+void gfx16_SetCharData(char index, const uint8_t *data);
+
 #ifdef __cplusplus
 }
 #endif
