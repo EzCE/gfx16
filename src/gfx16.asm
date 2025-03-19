@@ -115,7 +115,28 @@ gfx16_Begin:
 ; Returns:
 ;  None
     call gfx16_ClearVRAM
-    call ti.boot.InitializeHardware
+    ld hl, $2000B
+    ld (ti.mpSpiRange + ti.spiCtrl1), hl
+    ld hl, $1828
+    ld (ti.mpSpiRange), hl
+    ld hl, $0C
+    ld (ti.mpSpiRange + ti.spiCtrl2), hl
+    nop
+    ld hl, $40
+    ld (ti.mpSpiRange + ti.spiCtrl2), hl
+    call ti.Delay10ms
+    ld hl, $182B
+    ld (ti.mpSpiRange), hl
+    ld hl, $0C
+    ld (ti.mpSpiRange + ti.spiCtrl2), hl
+    nop
+    ld hl, $40
+    ld (ti.mpSpiRange + ti.spiCtrl2), hl
+    call ti.Delay10ms
+    ld hl, $21
+    ld (ti.mpSpiRange + ti.spiIntCtrl), hl
+    ld hl, $100
+    ld (ti.mpSpiRange + ti.spiCtrl2), hl
     ld de, ti.lcdWatermark + ti.lcdIntFront + ti.lcdPwr + ti.lcdBgr + ti.lcdBpp16
     ld hl, ti.mpLcdBase
     ld bc, ti.vRam
