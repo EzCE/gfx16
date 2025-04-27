@@ -177,6 +177,24 @@ void gfx16_FillInvertedRectangle_NoClip(uint24_t x, uint8_t y, uint16_t width, u
 void gfx16_FillInvertedRectangle(int x, int y, int width, int height);
 
 /**
+ * @brief Draws a clipped unfilled circle.
+ * 
+ * @param x X coordinate of the center.
+ * @param y Y coordinate of the center.
+ * @param radius Radius of the circle.
+ */
+void gfx16_Circle(int x, int y, uint8_t radius);
+
+/**
+ * @brief Draws an unclipped unfilled circle.
+ * 
+ * @param x X coordinate of the center.
+ * @param y Y coordinate of the center.
+ * @param radius Radius of the circle.
+ */
+void gfx16_Circle_NoClip(int x, uint8_t y, uint8_t radius);
+
+/**
  * @brief Draws a clipped vertical line.
  * 
  * @param x X coordinate of the line.
@@ -211,6 +229,26 @@ void gfx16_HorizLine(int x, int y, int length);
  * @param length Length of the line.
  */
 void gfx16_HorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
+
+/**
+ * @brief Draws a clipped line.
+ * 
+ * @param x0 First x coordinate.
+ * @param y0 First y coordinate.
+ * @param x1 Second x coordinate.
+ * @param y1 Second y coordinate.
+ */
+void gfx16_Line(int x0, int y0, int x1, int y1);
+
+/**
+ * @brief Draws an unclipped line.
+ * 
+ * @param x0 First x coordinate.
+ * @param y0 First y coordinate.
+ * @param x1 Second x coordinate.
+ * @param y1 Second y coordinate.
+ */
+void gfx16_Line_NoClip(uint24_t x0, uint8_t y0, uint24_t x1, uint8_t y1);
 
 /**
  * @brief Draws a clipped unfilled rectangle.

@@ -27,10 +27,14 @@ library GFX16, 1
     export gfx16_FillRectangle
     export gfx16_FillInvertedRectangle_NoClip
     export gfx16_FillInvertedRectangle
+    export gfx16_Circle
+    export gfx16_Circle_NoClip
     export gfx16_VertLine
     export gfx16_VertLine_NoClip
     export gfx16_HorizLine
     export gfx16_HorizLine_NoClip
+    export gfx16_Line
+    export gfx16_Line_NoClip
     export gfx16_Rectangle
     export gfx16_Rectangle_NoClip
     export gfx16_InvertedVertLine
@@ -608,6 +612,269 @@ _FillInvertedRectangle_NoClip:
     jr .loop
 
 ;-------------------------------------------------------------------------------
+gfx16_Circle:
+; Draws a clipped unfilled circle.
+; Arguments:
+;  arg0: X coordinate of the center.
+;  arg1: Y coordinate of the center.
+;  arg2: Radius of the circle.
+; Returns:
+;  None
+    xor a, a
+    jr _circle
+
+;-------------------------------------------------------------------------------
+gfx16_Circle_NoClip:
+; Draws an unclipped unfilled circle.
+; Arguments:
+;  arg0: X coordinate of the center.
+;  arg1: Y coordinate of the center.
+;  arg2: Radius of the circle.
+; Returns:
+;  None
+    or a, a
+    sbc hl, hl
+    ld iy, 3
+    add iy, sp
+    ld l, (iy + 3)
+    ld (iy + 3), hl
+    ld a, _line.noClip - _line.setPixel - 2
+
+_circle:
+    ld (_line.smcClip), a
+    call ti._frameset0
+    ld hl, (_GlobalColor)
+    ld iy, 6
+    add iy, sp
+    push hl
+    ld de, (iy)
+    ld bc, (iy + 3)
+    ld hl, (iy + 6)
+    push de ; x center, iy + 6
+    push bc ; y center, iy + 3
+    push hl ; radius, iy + 0
+    lea iy, iy - 18
+    push hl ; x, iy - 3
+    ld bc, 0
+    push bc ; y, iy - 6
+    push bc ; uninitialized var
+    ld hl, (iy - 3)
+    ld bc, (iy + 6)
+    add hl, bc
+    push hl
+    ld hl, (iy - 6)
+    ld de, (iy + 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    ld a, d
+    or a, e
+    jr z, .return
+    sbc hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy - 6)
+    ld de, (iy + 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    ld de, (iy - 3)
+    ld hl, (iy + 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    or a, a
+    sbc hl, hl
+    inc hl
+    ld de, (iy)
+    or a, a
+    sbc hl, de
+    pop de
+    push hl ; perimeter, iy - 9
+
+.loopCircle:
+    ld de, (iy - 6)
+    ld hl, (iy - 3)
+    or a, a
+    sbc hl, de
+    jr nc, .noret
+
+.return:
+    ld sp, ix
+    pop ix
+    ret
+
+.noret:
+    ld hl, (iy - 6)
+    inc hl
+    ld (iy - 6), hl
+    ld de, (iy - 9)
+    or a, a
+    sbc hl, hl
+    sbc hl, de
+    jr z, .Pis0orLess
+    bit 7, (iy - 7) ; upper byte of perimeter
+    jr z, .PisMoreThan0
+
+.Pis0orLess:
+    ld hl, (iy - 6)
+    add hl, hl
+    ld de, (iy - 9)
+    add hl, de
+    inc hl
+    ld (iy - 9), hl
+    jr .continueDraw
+
+.PisMoreThan0:
+    ld hl, (iy - 3)
+    dec hl
+    ld (iy - 3), hl
+    ld hl, (iy - 6)
+    add hl, hl
+    ld de, (iy - 9)
+    add hl, de
+    push hl
+    ld hl, (iy - 3)
+    add hl, hl
+    ex de, hl
+    pop hl
+    or a, a
+    sbc hl, de
+    inc hl
+    ld (iy - 9), hl
+
+.continueDraw:
+    ld de, (iy - 6)
+    ld hl, (iy - 3)
+    or a, a
+    sbc hl, de
+    jr c, .return
+    ld hl, (iy - 3)
+    ld de, (iy + 6)
+    add hl, de
+    push hl
+    ld hl, (iy - 6)
+    ld de, (iy + 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy - 6)
+    ld de, (iy + 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy - 3)
+    ld de, (iy + 6)
+    add hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy - 6)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    jp z, .loopCircle
+    ld hl, (iy - 6)
+    ld de, (iy + 6)
+    add hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    add hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy - 6)
+    ld de, (iy + 6)
+    add hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    jp .loopCircle
+
+;-------------------------------------------------------------------------------
 gfx16_VertLine:
 ; Draws a clipped vertical line.
 ; Arguments:
@@ -766,6 +1033,243 @@ _HorizLine_NoClip:
     ld a, b
     or a, c
     jr nz, .loop
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_Line:
+; Draws a clipped line.
+; Argument
+;  arg0: First x coordinate.
+;  arg1: First y coordinate.
+;  arg2: Second x coordinate.
+;  arg3: Second y coordinate.
+; Returns:
+;  None
+    xor a, a
+    jr _line
+
+;-------------------------------------------------------------------------------
+gfx16_Line_NoClip:
+; Draws an unclipped line.
+; Argument
+;  arg0: First x coordinate.
+;  arg1: First y coordinate.
+;  arg2: Second x coordinate.
+;  arg3: Second y coordinate.
+; Returns:
+;  None
+    ld iy, 3
+    add iy, sp
+    or a, a
+    sbc hl, hl
+    push hl
+    pop de
+    ld l, (iy + 3)
+    ld (iy + 3), hl
+    ld e, (iy + 9)
+    ld (iy + 9), de
+    ld a, _line.noClip - _line.setPixel - 2
+
+_line:
+    ld (_line.smcClip), a
+    call ti._frameset0
+    ld iy, 6
+    add iy, sp
+    ld hl, (iy)
+    ld bc, (iy + 3)
+    ld de, (iy + 6)
+    ld iy, (iy + 9)
+    push hl ; x0, iy + 21
+    push bc ; y0, iy + 18
+    push de ; x1, iy + 15
+    push iy ; y1, iy + 12
+    ld iy, 0
+    add iy, sp
+    ld bc, (_GlobalColor)
+    push bc ; color, iy + 9
+    ex de, hl
+    or a, a
+    sbc hl, de
+    ex de, hl
+    call .absoluteVal
+    push hl ; dx, iy + 6
+    ld hl, (iy)
+    ld de, (iy + 6)
+    or a, a
+    sbc hl, de
+    ex de, hl
+    call .absoluteVal
+    push hl ; dy, iy + 3
+    lea iy, iy - 12
+    ld sp, iy
+    ld c, 0
+    ld hl, (iy + 3)
+    ld de, (iy + 6)
+    or a, a
+    sbc hl, de
+    jr c, .decisionIs0
+    inc c ; decision variable is 1: x1 <> y1, x2 <> y2, and dx <> dy 
+    ld hl, (iy + 3)
+    ld (iy + 6), hl
+    ld (iy + 3), de
+    ld hl, (iy + 21)
+    ld de, (iy + 18)
+    ld (iy + 21), de
+    ld (iy + 18), hl
+    ld hl, (iy + 15)
+    ld de, (iy + 12)
+    ld (iy + 15), de
+    ld (iy + 12), hl
+
+.decisionIs0:
+    push bc ; decision, iy - 3
+    ld hl, (iy + 3)
+    ld de, (iy + 6)
+    add hl, hl
+    or a, a
+    sbc hl, de
+    push hl ; pk, iy - 6
+    ld hl, (iy + 6)
+    inc hl
+    push hl ; dx countdown for loop, iy - 9
+    ld hl, (iy + 21)
+    ld de, (iy + 18)
+    ld a, (iy - 3)
+    or a, a
+    jr nz, $ + 6
+    push hl
+    push de
+    jr $ + 4
+    push de
+    push hl
+    call .setPixel
+    pop hl
+    pop hl
+
+.drawLineLoop:
+    ld hl, (iy - 9)
+    dec hl
+    ld a, h
+    or a, l
+    jr nz, .continue
+    ld sp, ix
+    pop ix
+    ret
+
+.continue:
+    ld (iy - 9), hl
+    ld hl, (iy + 21)
+    ld de, (iy + 15)
+    or a, a
+    sbc hl, de
+    ld hl, (iy + 21)
+    jr nc, $ + 5
+    inc hl
+    jr $ + 3
+    dec hl
+    ld (iy + 21), hl
+    bit 7, (iy - 4)
+    jr z, .pkGreaterThan0
+
+.pkLessThan0:
+    ld hl, (iy + 21)
+    ld de, (iy + 18)
+    ld a, (iy - 3)
+    or a, a
+    jr nz, $ + 6
+    push hl
+    push de
+    jr $ + 4
+    push de
+    push hl
+    call .setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 3)
+    add hl, hl
+    ld de, (iy - 6)
+    add hl, de
+    ld (iy - 6), hl
+    jr .drawLineLoop
+
+.pkGreaterThan0:
+    ld hl, (iy + 18)
+    ld de, (iy + 12)
+    or a, a
+    sbc hl, de
+    ld hl, (iy + 18)
+    jr nc, $ + 5
+    inc hl
+    jr $ + 3
+    dec hl
+    ld (iy + 18), hl
+    ld hl, (iy + 21)
+    ld de, (iy + 18)
+    ld a, (iy - 3)
+    or a, a
+    jr nz, $ + 6
+    push hl
+    push de
+    jr $ + 4
+    push de
+    push hl
+    call .setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    add hl, hl
+    ex de, hl
+    ld hl, (iy + 3)
+    add hl, hl
+    ld bc, (iy - 6)
+    add hl, bc
+    or a, a
+    sbc hl, de
+    ld (iy - 6), hl
+    jp .drawLineLoop
+
+.absoluteVal: ; number = de
+    or a, a
+    sbc hl, hl
+    sbc hl, de
+    ret p
+    ex de, hl
+    ret
+
+.setPixel:
+    jr .noClip
+
+_line.smcClip := $ - 1
+    ld de, (iy - 15)
+    ld hl, -ti.lcdHeight
+    add hl, de
+    ret c
+    ld bc, (iy - 12)
+    ld hl, -ti.lcdWidth
+    add hl, bc
+    ret c
+
+.noClip:
+    ld hl, ti.vRam
+    ld de, (iy - 12)
+    ; set a = ((x & $100) * lcdHeight) >> 8
+    ld a, d
+    ld d, ti.lcdHeight
+    rra
+    sbc a, a
+    and a, d
+    mlt de
+    add hl, de
+    add hl, de
+    ; add ((x & $100) * lcdHeight + y) * 2
+    ld d, a
+    ld e, (iy - 15)
+    add hl, de
+    add hl, de
+    ld de, (iy + 9)
+    ld (hl), e
+    inc hl
+    ld (hl), d
     ret
 
 ;-------------------------------------------------------------------------------
