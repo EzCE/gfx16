@@ -29,6 +29,8 @@ library GFX16, 1
     export gfx16_FillInvertedRectangle
     export gfx16_Circle
     export gfx16_Circle_NoClip
+    export gfx16_FillCircle
+    export gfx16_FillCircle_NoClip
     export gfx16_VertLine
     export gfx16_VertLine_NoClip
     export gfx16_HorizLine
@@ -649,7 +651,9 @@ _circle:
     push hl
     ld de, (iy)
     ld bc, (iy + 3)
-    ld hl, (iy + 6)
+    or a, a
+    sbc hl, hl
+    ld l, (iy + 6)
     push de ; x center, iy + 6
     push bc ; y center, iy + 3
     push hl ; radius, iy + 0
@@ -873,6 +877,251 @@ _circle:
     pop hl
     pop hl
     jp .loopCircle
+
+;-------------------------------------------------------------------------------
+gfx16_FillCircle:
+; Draws a clipped filled circle.
+; Arguments:
+;  arg0: X coordinate of the center.
+;  arg1: Y coordinate of the center.
+;  arg2: Radius of the circle.
+; Returns:
+;  None
+    xor a, a
+    ld hl, gfx16_VertLine
+    jr _fillCircle
+
+;-------------------------------------------------------------------------------
+gfx16_FillCircle_NoClip:
+; Draws an unclipped filled circle.
+; Arguments:
+;  arg0: X coordinate of the center.
+;  arg1: Y coordinate of the center.
+;  arg2: Radius of the circle.
+; Returns:
+;  None
+    or a, a
+    sbc hl, hl
+    ld iy, 3
+    add iy, sp
+    ld l, (iy + 3)
+    ld (iy + 3), hl
+    ld a, _line.noClip - _line.setPixel - 2
+    ld hl, gfx16_VertLine_NoClip
+
+_fillCircle: ; color = iy + 9
+    ld (_line.smcClip), a
+    ld (_fillCircle.smcClip), hl
+    call ti._frameset0
+    ld hl, (_GlobalColor)
+    ld iy, 6
+    add iy, sp
+    push hl
+    ld de, (iy)
+    ld bc, (iy + 3)
+    or a, a
+    sbc hl, hl
+    ld l, (iy + 6)
+    push de ; x center, iy + 6
+    push bc ; y center, iy + 3
+    push hl ; radius, iy + 0
+    ld iy, 0
+    add iy, sp
+    push hl ; x, iy - 3
+    ld bc, 0
+    push bc ; y, iy - 6
+    push bc ; uninitialized var
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy + 3)
+    push hl ; y center
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    ld a, d
+    or a, e
+    jr z, .return
+    add hl, de
+    push hl
+    ld hl, (iy + 3)
+    push hl
+    call _line.setPixel
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy - 3)
+    add hl, hl
+    inc hl
+    push hl
+    call .drawVertLine
+    pop hl
+    pop hl
+    pop hl
+    or a, a
+    sbc hl, hl
+    inc hl
+    ld de, (iy)
+    or a, a
+    sbc hl, de
+    pop de
+    push hl ; perimeter, iy - 9
+
+.loopCircle:
+    ld de, (iy - 6)
+    ld hl, (iy - 3)
+    or a, a
+    sbc hl, de
+    jr nc, .noret
+
+.return:
+    ld sp, ix
+    pop ix
+    ret
+
+.noret:
+    ld hl, (iy - 6)
+    inc hl
+    ld (iy - 6), hl
+    ld de, (iy - 9)
+    or a, a
+    sbc hl, hl
+    sbc hl, de
+    jr z, .Pis0orLess
+    bit 7, (iy - 7) ; upper byte of perimeter
+    jr z, .PisMoreThan0
+
+.Pis0orLess:
+    ld hl, (iy - 6)
+    add hl, hl
+    ld de, (iy - 9)
+    add hl, de
+    inc hl
+    ld (iy - 9), hl
+    jr .continueDraw
+
+.PisMoreThan0:
+    ld hl, (iy - 3)
+    dec hl
+    ld (iy - 3), hl
+    ld hl, (iy - 6)
+    add hl, hl
+    ld de, (iy - 9)
+    add hl, de
+    push hl
+    ld hl, (iy - 3)
+    add hl, hl
+    ex de, hl
+    pop hl
+    or a, a
+    sbc hl, de
+    inc hl
+    ld (iy - 9), hl
+
+.continueDraw:
+    ld de, (iy - 6) ; y
+    ld hl, (iy - 3) ; x
+    or a, a
+    sbc hl, de
+    jr c, .return
+    ld hl, (iy + 6) ; x center
+    ld de, (iy - 6)
+    or a, a
+    add hl, de
+    push hl
+    ld hl, (iy + 3) ; y center
+    ld de, (iy - 3)
+    sbc hl, de
+    push hl
+    ld hl, (iy - 3)
+    add hl, hl
+    inc hl
+    push hl
+    call .drawVertLine
+    pop hl
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy - 3)
+    add hl, hl
+    inc hl
+    push hl
+    call .drawVertLine
+    pop hl
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    or a, a
+    add hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 6)
+    sbc hl, de
+    push hl
+    ld hl, (iy - 6)
+    add hl, hl
+    inc hl
+    push hl
+    call .drawVertLine
+    pop hl
+    pop hl
+    pop hl
+    ld hl, (iy + 6)
+    ld de, (iy - 3)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy + 3)
+    ld de, (iy - 6)
+    or a, a
+    sbc hl, de
+    push hl
+    ld hl, (iy - 6)
+    add hl, hl
+    inc hl
+    push hl
+    call .drawVertLine
+    pop hl
+    pop hl
+    pop hl
+    jp .loopCircle
+
+.drawVertLine: ; x = iy - 12, y = iy - 15, length = iy - 18, color = iy + 9
+    ld hl, (iy - 12)
+    ld bc, (iy - 15)
+    ld de, (iy - 18)
+    push iy
+    push de
+    push bc
+    push hl
+    call gfx16_VertLine
+
+.smcClip := $ - 3
+    pop hl
+    pop bc
+    pop de
+    pop iy
+    ret
 
 ;-------------------------------------------------------------------------------
 gfx16_VertLine:

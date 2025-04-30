@@ -195,6 +195,24 @@ void gfx16_Circle(int x, int y, uint8_t radius);
 void gfx16_Circle_NoClip(int x, uint8_t y, uint8_t radius);
 
 /**
+ * @brief Draws a clipped filled circle.
+ * 
+ * @param x X coordinate of the center.
+ * @param y Y coordinate of the center.
+ * @param radius Radius of the circle.
+ */
+void gfx16_FillCircle(int x, int y, uint8_t radius);
+
+/**
+ * @brief Draws an unclipped filled circle.
+ * 
+ * @param x X coordinate of the center.
+ * @param y Y coordinate of the center.
+ * @param radius Radius of the circle.
+ */
+void gfx16_FillCircle_NoClip(int x, uint8_t y, uint8_t radius);
+
+/**
  * @brief Draws a clipped vertical line.
  * 
  * @param x X coordinate of the line.
