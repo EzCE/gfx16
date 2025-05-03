@@ -18,6 +18,13 @@ int main(void)
     /* Draw an unclipped sprite */
     gfx16_Sprite_NoClip(oiram, 190, 110);
 
+    /* Draw a scaled sprite without clipping */
+    gfx16_ScaledSprite_NoClip(oiram, 50, 50, 4, 4);
+
+    /* Set transparent color and draw a transparent sprite */
+    gfx16_SetTransparentColor(0xF810);
+    gfx16_TransparentSprite_NoClip(oiram, 260, 170);
+
     /* Waits for a key */
     while (!os_GetCSC());
 

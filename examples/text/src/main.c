@@ -19,9 +19,13 @@ int main(void)
     gfx16_SetTextFGColor(GFX16_OS_BLUE);
     gfx16_PutStringXY("Colored text", 20, 20);
 
-    /* Draw some text scaled by 2 horizontally and 3 vertically */
-    gfx16_SetTextScale(2, 3);
-    gfx16_PutStringXY("Scaled text", 30, 30);
+    /* Draw some text scaled by 2 horizontally and 4 vertically */
+    gfx16_SetTextScale(2, 4);
+    gfx16_PutStringXY("Scaled ", 30, 30);
+
+    /* Draw some text scaled by 4 horizontally and 2 vertically */
+    gfx16_SetTextScale(4, 2);
+    gfx16_PutString("text");
 
     /* Waits for a key */
     while (!os_GetCSC());
