@@ -48,6 +48,9 @@ extern "C" {
 #define gfx16_InvertScreen() \
 gfx16_FillInvertedRectangle_NoClip(0, 0, 320, 240)
 
+#define gfx16_RGBTo565(r, g, b) \
+((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+
 /**
  * @brief Sets up the display for gfx16. It is necessary to call this function before using the library.
  * 
