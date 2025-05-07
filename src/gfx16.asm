@@ -246,7 +246,6 @@ gfx16_BeginFrame:
     jr z, gfx16_BeginFrame
     ld (ti.mpLcdIcr), a
     spi $B0, $01 ; disable framebuffer copies
-    spi $2C
     ret
 
 ;-------------------------------------------------------------------------------
@@ -260,7 +259,7 @@ gfx16_EndFrame:
     ld hl, (ti.mpLcdCurr + 1) ; hl = *mpLcdCurr >> 8
     sub a, h
     jr nz, gfx16_EndFrame ; nz ==> lcdCurr may have updated mid-read; retry read
-    ld de, ti.vRamEnd
+    ld de, ti.vRamEnd shr 8
     or a, a
     sbc hl, de
     jr z, .resetVcomp
