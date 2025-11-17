@@ -406,6 +406,18 @@ void gfx16_ScaledSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y
 void gfx16_ScaledTransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y, uint8_t width_scale, uint8_t height_scale);
 
 /**
+ * @brief Copies a rectangle to another location on the screen.
+ * 
+ * @param src_x X coordinate on src.
+ * @param src_y Y coordinate on src.
+ * @param dst_x X coordinate on dst.
+ * @param dst_y Y coordinate on dst.
+ * @param width Width of rectangle.
+ * @param height Height of rectangle.
+ */
+void gfx16_CopyRectangle(uint24_t src_x, uint8_t src_y, uint24_t dst_x, uint8_t dst_y, uint24_t width, uint8_t height);
+
+/**
  * @brief Draws a single character at the current cursor position.
  * 
  * @param c Character to draw.

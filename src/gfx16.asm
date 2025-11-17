@@ -51,6 +51,7 @@ library GFX16, 1
     export gfx16_TransparentSprite_NoClip
     export gfx16_ScaledSprite_NoClip
     export gfx16_ScaledTransparentSprite_NoClip
+    export gfx16_CopyRectangle
     export gfx16_PutChar
     export gfx16_PutString
     export gfx16_PutStringXY
@@ -2267,6 +2268,54 @@ gfx16_ScaledTransparentSprite_NoClip:
     push de
     push hl
     jr .spriteLoop
+
+;-------------------------------------------------------------------------------
+gfx16_CopyRectangle:
+; Copies a rectangle to another location on the screen.
+; Arguments:
+;  arg0: X coordinate on src.
+;  arg1: Y coordinate on src.
+;  arg2: X coordinate on dst.
+;  arg3: Y coordinate on dst.
+;  arg4: Width of rectangle.
+;  arg5: Height of rectangle.
+; Returns:
+;  None
+    ld iy, 0
+    add iy, sp
+    call _getVramAddr
+    push hl
+    lea iy, iy + 6
+    call _getVramAddr
+    ex de, hl
+    or a, a
+    sbc hl, hl
+    ld l, (iy + 12) ; height
+    add hl, hl
+    ld (.height), hl
+    pop hl
+    ld bc, (iy + 9) ; width
+
+.loop:
+    push bc
+    push hl
+    push de
+    ld bc, 0
+
+.height := $ - 3
+    ldir
+    pop hl
+    ld bc, ti.lcdHeight * 2
+    add hl, bc
+    ex de, hl
+    pop hl
+    add hl, bc
+    pop bc
+    dec bc
+    ld a, b
+    or a, c
+    jr nz, .loop
+    ret
 
 ;-------------------------------------------------------------------------------
 gfx16_PutChar:
