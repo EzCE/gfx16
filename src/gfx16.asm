@@ -51,6 +51,8 @@ library GFX16, 1
     export gfx16_TransparentSprite_NoClip
     export gfx16_ScaledSprite_NoClip
     export gfx16_ScaledTransparentSprite_NoClip
+    export gfx16_ScaleSprite
+    export gfx16_AllocSprite
     export gfx16_CopyRectangle
     export gfx16_PutChar
     export gfx16_PutString
@@ -2270,6 +2272,136 @@ gfx16_ScaledTransparentSprite_NoClip:
     jr .spriteLoop
 
 ;-------------------------------------------------------------------------------
+gfx16_ScaleSprite:
+; Resizes a sprite to new dimensions.
+; Basically identical to graphx's gfx_ScaleSprite, but accounts for 16bpp
+; and swapped width / height.
+; Arguments:
+;  arg0: Pointer to sprite struct input.
+;  arg1: Pointer to sprite struct output.
+; Returns:
+;  arg1: Pointer to sprite struct output
+    ld iy, 0
+    lea bc, iy
+    add iy, sp
+    push ix
+    ld hl, (iy + 6)
+    push hl
+    ld a, (hl)
+    ld ixh, a ; target_width
+    ld (ScaleWidth), a
+    inc hl
+    xor a, a
+    sub a, (hl)
+    ld ixl, a ; -target_height
+    inc hl
+    push hl ; hl->tgt_data
+    ld hl, (iy + 3)
+    ld e, (hl) ; src_width
+    inc hl
+    ld c, (hl) ; src_height
+    inc hl
+    push hl ; hl->src_data
+    push de ; e = src_width
+    call _UCDivA ; ca = dv = (source_height*256)/target_height
+    pop hl ; l = src_width
+    ld (dv_shl_16), a
+    ld h, c
+    ld c, l
+    mlt hl
+    ld (dv_shr_8_times_width), hl
+    add hl, bc
+    ld (dv_shr_8_times_width_plus_width), hl
+    xor a, a
+    sub a, ixh ; -target_width
+    call _UCDivA ; ca = du = (source_width*256)/target_width
+    pop hl ; hl->src_data
+    pop de ; de->tgt_data
+    ld iy, 0
+    ld iyl, a
+    ld ixh, c ; (.du) = bc:iyl, ixl = target_height
+
+; b = out_loop_times
+; de = target buffer adress
+.outer:
+    push hl
+
+ScaleWidth := $+2
+    ld iyh, 0
+    xor a, a
+    ld b, a
+    ld c, ixh ; (.du)
+
+.loop:
+    ldi
+    inc bc
+    ldi
+    add a, iyl
+    push af
+    adc hl, bc ; xu += du
+    pop af
+    adc hl, bc
+    inc bc ; bc:iyl is du
+    dec iyh
+    jr nz, .loop
+    pop hl ; add up to hla
+    ld bc, 0 ; dv<<16
+
+dv_shl_16 := $-1
+    add iy, bc
+    ld bc, 0 ; dv>>8*src_width
+
+dv_shr_8_times_width := $-3
+    jr nc, .skip
+    ld bc, 0 ; dv>>8*src_width+src_width
+
+dv_shr_8_times_width_plus_width := $-3
+.skip:
+    add hl, bc
+    add hl, bc
+    inc ixl
+    jr nz, .outer
+    pop hl
+    pop ix
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_AllocSprite:
+; Dynamically allocates memory for a sprite with a user-specified malloc routine.
+; Arguments:
+;  arg0 : Width of new sprite.
+;  arg1 : Height of new sprite.
+;  arg2 : Pointer to malloc routine.
+; Returns:
+;  Pointer to allocated sprite, first byte height, second width.
+    ld hl, -1
+    ld (hl), 2
+    ld iy, 3
+    add iy, sp
+    ld h, (iy) ; h = width
+    ld l, (iy + 3) ; l = height
+    ld de, (iy + 6) ; de = malloc
+    push hl
+    mlt hl
+    add hl, hl ; hl = width * height * 2
+    inc hl
+    inc hl ; account for size
+    push hl
+    ex de, hl
+    call .malloc ; malloc(width * height * 2 + 2)
+    pop de
+    pop de ; e = height, d = width
+    add hl, de
+    or a, a
+    sbc hl, de
+    ret z ; malloc failed
+    ld (hl), de ; store width and height
+    ret
+
+.malloc:
+    jp (hl)
+
+;-------------------------------------------------------------------------------
 gfx16_CopyRectangle:
 ; Copies a rectangle to another location on the screen.
 ; Arguments:
@@ -2887,6 +3019,33 @@ _ClipCoordinates:
     sub a, (iy + 3) ; compute new x width
     scf ; set carry for success
     ret
+
+;-------------------------------------------------------------------------------
+; From graphx
+_UCDivA:
+    sbc hl, hl
+    ld h, a
+    xor a, a
+    ld l, a
+    ex de, hl
+    sbc hl, hl
+    ld l, c
+    call .load
+    ld c, a
+
+.load:
+    ld b, 8
+
+.loop:
+    add hl, hl
+    add hl, de
+    jr c, .skip
+    sbc hl, de
+
+.skip:
+    rla
+    djnz .loop
+    ret ; ca = c*256/a, h = c*256%a
 
 ;-------------------------------------------------------------------------------
 ; Internal library data

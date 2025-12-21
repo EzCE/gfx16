@@ -42,6 +42,28 @@ extern "C" {
 #define GFX16_OS_DARKGRAY   (0x52AA)
 
 /**
+ * @brief Statically allocates memory for a sprite.
+ * 
+ * @param name Name of declared gfx_sprite_t *.
+ * @param width Sprite width.
+ * @param height Sprite height.
+ */
+#define gfx16_TempSprite(name, width, height) \
+uint8_t name##_data[2 + ((width) * (height)) * 2] = { (height), (width) }; \
+gfx_sprite_t *name = (gfx_sprite_t *)name##_data
+
+/**
+ * @brief Dynamically allocates memory for a sprite using malloc.
+ *
+ * @param width Width of new sprite.
+ * @param height Height of new sprite.
+ * @return Pointer to allocated sprite.
+ * @see gfx_AllocSprite
+ */
+#define gfx16_MallocSprite(width, height) \
+gfx16_AllocSprite(width, height, malloc)
+
+/**
  * @brief Inverts the contents of the screen.
  * 
  */
@@ -404,6 +426,25 @@ void gfx16_ScaledSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y
  * @param height_scale Height scaling factor.
  */
 void gfx16_ScaledTransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x, uint8_t y, uint8_t width_scale, uint8_t height_scale);
+
+/**
+ * @brief Resizes a sprite to new dimensions.
+ * 
+ * @param sprite_in Pointer to sprite struct input.
+ * @param sprite_out Pointer to sprite struct output.
+ * @returns A pointer to sprite_out.
+ */
+gfx_sprite_t *gfx16_ScaleSprite(const gfx_sprite_t *sprite_in, gfx_sprite_t *sprite_out);
+
+/**
+ * @brief Dynamically allocates memory for a sprite with a user-specified malloc routine.
+ * 
+ * @param width Width of new sprite.
+ * @param height Height of new sprite.
+ * @param malloc_routine Pointer to malloc routine.
+ * @return Pointer to allocated sprite.
+ */
+gfx_sprite_t *gfx16_AllocSprite(uint8_t width, uint8_t height, void *(*malloc_routine)(size_t)) __attribute__((__nonnull__(3)));
 
 /**
  * @brief Copies a rectangle to another location on the screen.
