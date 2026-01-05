@@ -2374,8 +2374,6 @@ gfx16_AllocSprite:
 ;  arg2 : Pointer to malloc routine.
 ; Returns:
 ;  Pointer to allocated sprite, first byte height, second width.
-    ld hl, -1
-    ld (hl), 2
     ld iy, 3
     add iy, sp
     ld h, (iy) ; h = width
@@ -2425,8 +2423,46 @@ gfx16_CopyRectangle:
     ld l, (iy + 12) ; height
     add hl, hl
     ld (.height), hl
-    pop hl
+    ld a, (iy) ; src_y
+    cp a, (iy + 6) ; dst_y
+    jr nc, .nolddr
+    dec hl
+    ex de, hl
+    add hl, de
+    ex de, hl
+    pop bc
+    add hl, bc
+    push hl
+    ld a, $B8 ; lddr byte 2
+    ld (.smcLoad), a
+
+.nolddr:
+    pop hl ; hl = src_vram, de = dst_vram
     ld bc, (iy + 9) ; width
+    or a, a
+    sbc hl, de
+    jr nc, .noReverse
+    push hl
+    ld hl, -ti.lcdHeight * 2
+    ld (.smcReverse), hl
+    push bc
+    pop hl
+    ex de, hl
+    ; set a = ((x & $100) * lcdHeight) >> 8
+    ld a, d
+    ld d, ti.lcdHeight
+    rra
+    sbc a, a
+    and a, d
+    mlt de
+    add hl, de
+    add hl, de ; dst_vram + lcdHeight * 2 * width
+    ex de, hl
+    pop hl
+    inc bc ; correct off by one when reversing
+
+.noReverse:
+    add hl, de ; src_vram + lcdHeight * 2 * width
 
 .loop:
     push bc
@@ -2436,8 +2472,12 @@ gfx16_CopyRectangle:
 
 .height := $ - 3
     ldir
+
+.smcLoad := $ - 1
     pop hl
     ld bc, ti.lcdHeight * 2
+
+.smcReverse := $ - 3
     add hl, bc
     ex de, hl
     pop hl
