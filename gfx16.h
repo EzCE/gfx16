@@ -281,7 +281,27 @@ void gfx16_HorizLine_NoClip(uint24_t x, uint8_t y, uint16_t length);
  * @param x1 Second x coordinate.
  * @param y1 Second y coordinate.
  */
+void gfx16_InvertedLine(int x0, int y0, int x1, int y1);
+
+/**
+ * @brief Draws a clipped line.
+ * 
+ * @param x0 First x coordinate.
+ * @param y0 First y coordinate.
+ * @param x1 Second x coordinate.
+ * @param y1 Second y coordinate.
+ */
 void gfx16_Line(int x0, int y0, int x1, int y1);
+
+/**
+ * @brief Draws an unclipped line.
+ * 
+ * @param x0 First x coordinate.
+ * @param y0 First y coordinate.
+ * @param x1 Second x coordinate.
+ * @param y1 Second y coordinate.
+ */
+void gfx16_InvertedLine_NoClip(uint24_t x0, uint8_t y0, uint24_t x1, uint8_t y1);
 
 /**
  * @brief Draws an unclipped line.

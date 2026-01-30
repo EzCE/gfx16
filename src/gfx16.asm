@@ -35,7 +35,9 @@ library GFX16, 1
     export gfx16_VertLine_NoClip
     export gfx16_HorizLine
     export gfx16_HorizLine_NoClip
+    export gfx16_InvertedLine
     export gfx16_Line
+    export gfx16_InvertedLine_NoClip
     export gfx16_Line_NoClip
     export gfx16_Rectangle
     export gfx16_Rectangle_NoClip
@@ -1287,6 +1289,19 @@ _HorizLine_NoClip:
     ret
 
 ;-------------------------------------------------------------------------------
+gfx16_InvertedLine:
+; Draws a clipped line which inverts the colors it overlaps with.
+; Argument
+;  arg0: First x coordinate.
+;  arg1: First y coordinate.
+;  arg2: Second x coordinate.
+;  arg3: Second y coordinate.
+; Returns:
+;  None
+    xor a, a
+    jr _lineInv
+
+;-------------------------------------------------------------------------------
 gfx16_Line:
 ; Draws a clipped line.
 ; Argument
@@ -1297,6 +1312,34 @@ gfx16_Line:
 ; Returns:
 ;  None
     xor a, a
+    jr _lineNoInv
+
+;-------------------------------------------------------------------------------
+gfx16_InvertedLine_NoClip:
+; Draws an unclipped line which inverts the colors it overlaps with.
+; Argument
+;  arg0: First x coordinate.
+;  arg1: First y coordinate.
+;  arg2: Second x coordinate.
+;  arg3: Second y coordinate.
+; Returns:
+;  None
+    ld iy, 3
+    add iy, sp
+    or a, a
+    sbc hl, hl
+    push hl
+    pop de
+    ld l, (iy + 3)
+    ld (iy + 3), hl
+    ld e, (iy + 9)
+    ld (iy + 9), de
+    ld a, _line.noClipInv - _line.invertPixel - 2
+
+_lineInv:
+    ld hl, _line.smcClipInv
+    ld (_line.smcInvPixelClip), hl
+    ld hl, _line.invertPixel
     jr _line
 
 ;-------------------------------------------------------------------------------
@@ -1321,8 +1364,18 @@ gfx16_Line_NoClip:
     ld (iy + 9), de
     ld a, _line.noClip - _line.setPixel - 2
 
+_lineNoInv:
+    ld hl, _line.smcClip
+    ld (_line.smcInvPixelClip), hl
+    ld hl, _line.setPixel
+
 _line:
+    ld (_line.smcPixel1), hl
+    ld (_line.smcPixel2), hl
+    ld (_line.smcPixel3), hl
     ld (_line.smcClip), a
+
+_line.smcInvPixelClip := $ - 3
     call ti._frameset0
     ld iy, 6
     add iy, sp
@@ -1393,7 +1446,9 @@ _line:
     jr $ + 4
     push de
     push hl
-    call .setPixel
+    call _line.setPixel
+
+_line.smcPixel1 := $ - 3
     pop hl
     pop hl
 
@@ -1414,9 +1469,11 @@ _line:
     or a, a
     sbc hl, de
     ld hl, (iy + 21)
-    jr nc, $ + 5
+    jp p, .isPositive
     inc hl
     jr $ + 3
+
+.isPositive:
     dec hl
     ld (iy + 21), hl
     bit 7, (iy - 4)
@@ -1433,7 +1490,9 @@ _line:
     jr $ + 4
     push de
     push hl
-    call .setPixel
+    call _line.setPixel
+
+_line.smcPixel2 := $ - 3
     pop hl
     pop hl
     ld hl, (iy + 3)
@@ -1449,9 +1508,11 @@ _line:
     or a, a
     sbc hl, de
     ld hl, (iy + 18)
-    jr nc, $ + 5
+    jp p, .isPositive2
     inc hl
     jr $ + 3
+
+.isPositive2:
     dec hl
     ld (iy + 18), hl
     ld hl, (iy + 21)
@@ -1464,7 +1525,9 @@ _line:
     jr $ + 4
     push de
     push hl
-    call .setPixel
+    call _line.setPixel
+
+_line.smcPixel3 := $ - 3
     pop hl
     pop hl
     ld hl, (iy + 6)
@@ -1487,8 +1550,8 @@ _line:
     ex de, hl
     ret
 
-.setPixel:
-    jr .noClip
+_line.setPixel:
+    jr _line.noClip
 
 _line.smcClip := $ - 1
     ld de, (iy - 15)
@@ -1500,7 +1563,7 @@ _line.smcClip := $ - 1
     add hl, bc
     ret c
 
-.noClip:
+_line.noClip:
     ld hl, ti.vRam
     ld de, (iy - 12)
     ; set a = ((x & $100) * lcdHeight) >> 8
@@ -1521,6 +1584,45 @@ _line.smcClip := $ - 1
     ld (hl), e
     inc hl
     ld (hl), d
+    ret
+
+_line.invertPixel:
+    jr _line.noClipInv
+
+_line.smcClipInv := $ - 1
+    ld de, (iy - 15)
+    ld hl, -ti.lcdHeight
+    add hl, de
+    ret c
+    ld bc, (iy - 12)
+    ld hl, -ti.lcdWidth
+    add hl, bc
+    ret c
+
+_line.noClipInv:
+    ld hl, ti.vRam
+    ld de, (iy - 12)
+    ; set a = ((x & $100) * lcdHeight) >> 8
+    ld a, d
+    ld d, ti.lcdHeight
+    rra
+    sbc a, a
+    and a, d
+    mlt de
+    add hl, de
+    add hl, de
+    ; add ((x & $100) * lcdHeight + y) * 2
+    ld d, a
+    ld e, (iy - 15)
+    add hl, de
+    add hl, de
+    ld a, (hl)
+    cpl
+    ld (hl), a
+    inc hl
+    ld a, (hl)
+    cpl
+    ld (hl), a
     ret
 
 ;-------------------------------------------------------------------------------
