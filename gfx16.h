@@ -457,6 +457,16 @@ void gfx16_ScaledTransparentSprite_NoClip(const gfx_sprite_t *sprite, uint24_t x
 gfx_sprite_t *gfx16_ScaleSprite(const gfx_sprite_t *sprite_in, gfx_sprite_t *sprite_out);
 
 /**
+ * @brief Converts an 8bpp sprite to a 16bpp sprite for gfx16.
+ * 
+ * @param palette_in Pointer to the palette used by sprite_in.
+ * @param sprite_in Pointer to the 8bpp sprite struct input.
+ * @param sprite_out Pointer to the 16bpp sprite struct output.
+ * @return gfx_sprite_t* A pointer to sprite_out.
+ */
+gfx_sprite_t *gfx16_Sprite8bppTo16bpp(const void *palette_in, const gfx_sprite_t *sprite_in, gfx_sprite_t *sprite_out);
+
+/**
  * @brief Dynamically allocates memory for a sprite with a user-specified malloc routine.
  * 
  * @param width Width of new sprite.

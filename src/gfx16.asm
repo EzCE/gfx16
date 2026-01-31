@@ -54,6 +54,7 @@ library GFX16, 1
     export gfx16_ScaledSprite_NoClip
     export gfx16_ScaledTransparentSprite_NoClip
     export gfx16_ScaleSprite
+    export gfx16_Sprite8bppTo16bpp
     export gfx16_AllocSprite
     export gfx16_CopyRectangle
     export gfx16_PutChar
@@ -2464,6 +2465,93 @@ dv_shr_8_times_width_plus_width := $-3
     inc ixl
     jr nz, .outer
     pop hl
+    pop ix
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_Sprite8bppTo16bpp:
+; Converts an 8bpp sprite to a 16bpp sprite for gfx16.
+; Arguments:
+;  arg0 : Pointer to the palette used by sprite_in.
+;  arg1 : Pointer to the 8bpp sprite struct input.
+;  arg2 : Pointer to the 16bpp sprite struct output.
+; Returns:
+;  A pointer to the output sprite.
+    ld iy, 3
+    add iy, sp
+    push ix
+    ld hl, (iy + 3) ; sprite_in
+    ld de, (iy + 6) ; sprite_out
+    push de
+    ld bc, (hl)
+    push bc
+    pop ix
+    ex de, hl
+    ld (hl), b ; b = sprite_in height
+    inc hl
+    ld (hl), c ; c = sprite_in width
+    ld a, c
+    ld (.smcWidth), a
+    inc hl
+    inc de
+    inc de
+    ex de, hl ; hl = sprite_in, de = sprite_out
+    ld iy, (iy)
+
+.loop:
+    push hl
+    ld b, ixh
+
+.inner:
+    push bc
+    ld a, (hl)
+    push hl
+    or a, a
+    sbc hl, hl
+    ld l, a
+    add hl, hl
+    push iy
+    push hl
+    pop bc
+    add iy, bc
+    ld a, (iy)
+    add a, a
+    ld b, (iy + 1)
+    rl b
+    ld c, a
+    and a, 00111110b
+    srl a
+    ex af, af'
+    ld a, c
+    and a, 11100000b
+    ld c, a
+    ex af, af'
+    or a, c
+    and a, 11011111b
+    ld c, a
+    ld a, (iy + 1)
+    srl a
+    srl a
+    and a, 00100000b
+    or a, c
+    ld (de), a
+    inc de
+    ld a, b
+    ld (de), a
+    inc de
+    pop iy
+    pop hl
+    ld bc, 0
+
+.smcWidth := $ - 3
+    add hl, bc
+    pop bc
+    djnz .inner
+    pop hl
+    inc hl
+    dec ixl
+    jr nz, .loop
+    pop de
     pop ix
     ret
 
