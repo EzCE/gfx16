@@ -2601,6 +2601,8 @@ gfx16_CopyRectangle:
 ;  arg5: Height of rectangle.
 ; Returns:
 ;  None
+    ld hl, ti.lcdHeight * 2
+    ld (.smcReverse), hl
     ld iy, 0
     add iy, sp
     call _getVramAddr
@@ -2615,6 +2617,7 @@ gfx16_CopyRectangle:
     ld (.height), hl
     ld a, (iy) ; src_y
     cp a, (iy + 6) ; dst_y
+    ld a, $B0 ; ldir byte 2
     jr nc, .nolddr
     dec hl
     ex de, hl
@@ -2624,9 +2627,9 @@ gfx16_CopyRectangle:
     add hl, bc
     push hl
     ld a, $B8 ; lddr byte 2
-    ld (.smcLoad), a
 
 .nolddr:
+    ld (.smcLoad), a
     pop hl ; hl = src_vram, de = dst_vram
     ld bc, (iy + 9) ; width
     or a, a
@@ -2647,6 +2650,10 @@ gfx16_CopyRectangle:
     mlt de
     add hl, de
     add hl, de ; dst_vram + lcdHeight * 2 * width
+    ld d, a
+    ld e, 0
+    add hl, de
+    add hl, de
     ex de, hl
     pop hl
     inc bc ; correct off by one when reversing
