@@ -2771,7 +2771,7 @@ _PutChar:
     push bc
     ld bc, $FFFF
 
-.textTransparentColor := - 3
+.textTransparentColor := $ - 3
     or a, a
     push hl
     sbc.sis hl, bc
