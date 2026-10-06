@@ -528,6 +528,22 @@ void gfx16_SetTextXY(uint24_t x, uint8_t y);
 void gfx16_SetTextScale(uint8_t width, uint8_t height);
 
 /**
+ * @brief Places an int at the current cursor position.
+ * 
+ * @param n Number to print.
+ * @param length Number of characters to print.
+ */
+void gfx16_PrintInt(int n, uint8_t length);
+
+/**
+ * @brief Places an unsigned int at the current cursor position.
+ * 
+ * @param n Number to print.
+ * @param length Number of characters to print.
+ */
+void gfx16_PrintUInt(unsigned int n, uint8_t length);
+
+/**
  * @brief Sets the text foreground color.
  * 
  * @param color New text foreground color.

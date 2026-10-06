@@ -62,6 +62,8 @@ library GFX16, 1
     export gfx16_PutStringXY
     export gfx16_SetTextXY
     export gfx16_SetTextScale
+    export gfx16_PrintInt
+    export gfx16_PrintUInt
     export gfx16_SetTextFGColor
     export gfx16_SetTextBGColor
     export gfx16_SetTextTransparentColor
@@ -2907,6 +2909,94 @@ gfx16_SetTextScale:
     ret z
     ld (_PutChar.scaleHeight), a
     ld (_PutChar.scaleInitial + 1), a
+    ret
+;-------------------------------------------------------------------------------
+gfx16_PrintInt:
+; Places an int at the current cursor position.
+; Arguments:
+;  arg0 : Number to print.
+;  arg1 : Number of characters to print.
+; Returns:
+;  None
+    pop de
+    pop hl
+    push hl
+    push de
+    add hl, hl
+    db $3E ; xor a, a -> ld a, *
+
+;-------------------------------------------------------------------------------
+gfx16_PrintUInt:
+; Places an unsigned int at the current cursor position.
+; Arguments:
+;  arg0 : Number to print.
+;  arg1 : Minimum number of characters to print.
+; Returns:
+;  None
+    xor a, a
+    pop de
+    pop hl ; hl = uint
+    pop bc ; c = min num chars
+    push bc
+    push hl
+    push de
+    jr nc, .begin ; c ==> actually a negative int
+    ex de, hl
+    or a, a
+    sbc hl, hl
+    sbc hl, de ; hl = -int
+    ld e, '-'
+    call .printChar
+    dec c
+    jr nz, .begin
+    inc c
+
+.begin:
+    ld de, -10000000
+    call .num1
+    ld de, -1000000
+    call .num1
+    ld de, -100000
+    call .num1
+    ld de, -10000
+    call .num1
+    ld de, -1000
+    call .num1
+    ld de, -100
+    call .num1
+    ld de, -10
+    call .num1
+    ld de, -1
+
+.num1:
+    xor a, a
+
+.num2:
+    inc a
+    add hl, de
+    jr c, .num2
+    sbc hl, de
+    dec a ; a = next digit
+    jr nz, .printDigit ; z ==> digit is zero, maybe don't print
+    ld a, c
+    inc c
+    cp a, 8
+    ret c ; nc ==> a digit has already been
+          ;        printed, or must start printing
+          ;        to satisfy min num chars
+    xor a, a
+
+.printDigit:
+    add a, '0'
+    ld c, a ; mark that a digit has been printed
+
+.printChar:
+    push bc
+    ld e, a
+    call _PutChar
+PrintChar_1 := $-3
+
+    pop bc
     ret
 
 ;-------------------------------------------------------------------------------
