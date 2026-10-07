@@ -2946,7 +2946,7 @@ gfx16_PrintUInt:
     sbc hl, hl
     sbc hl, de ; hl = -int
     ld e, '-'
-    call .printChar
+    call .printChar + 1
     dec c
     jr nz, .begin
     inc c
@@ -2991,12 +2991,12 @@ gfx16_PrintUInt:
     ld c, a ; mark that a digit has been printed
 
 .printChar:
-    push bc
     ld e, a
+    push hl
+    push bc
     call _PutChar
-PrintChar_1 := $-3
-
     pop bc
+    pop hl
     ret
 
 ;-------------------------------------------------------------------------------
