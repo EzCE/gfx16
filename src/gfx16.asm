@@ -513,29 +513,45 @@ _FillRectangle_NoClip:
     ld a, (iy + 12)
     or a, a
     ret z
-    ld de, (_GlobalColor)
-    push bc
     push hl
-    ld b, a
+    or a, a
+    sbc hl, hl
+    ld l, a
+    add hl, hl
+    push hl
+    pop bc
+    pop hl
 
 .loop:
+    push bc
+    push hl
+    ld de, (_GlobalColor)
     ld (hl), e
     inc hl
     ld (hl), d
-    inc hl
-    djnz .loop
-    pop hl
-    ld bc, ti.lcdHeight * 2
-    add hl, bc
-    pop bc
+    dec bc
     dec bc
     ld a, b
     or a, c
-    ret z
-    push bc
+    jr z, .done
     push hl
-    ld b, (iy + 12)
-    jr .loop
+    pop de
+    dec hl
+    inc de
+    ldir
+
+.done:
+    pop hl
+    ld bc, ti.lcdHeight * 2
+    add hl, bc
+    ld bc, (iy + 9)
+    dec bc
+    ld (iy + 9), bc
+    ld a, b
+    or a, c
+    pop bc
+    jr nz, .loop
+    ret
 
 ;-------------------------------------------------------------------------------
 gfx16_FillInvertedRectangle:
