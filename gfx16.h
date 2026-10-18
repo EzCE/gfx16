@@ -520,12 +520,40 @@ void gfx16_PutStringXY(const char *string, uint24_t x, uint8_t y);
 void gfx16_SetTextXY(uint24_t x, uint8_t y);
 
 /**
+ * @brief Get the text cursor X coordinate.
+ * 
+ * @return uint8_t X coordinate.
+ */
+uint8_t gfx16_GetTextX(void);
+
+/**
+ * @brief Get the text cursor Y coordinate.
+ * 
+ * @return uint8_t Y coordinate.
+ */
+uint8_t gfx16_GetTextY(void);
+
+/**
  * @brief Sets the text scaling factors.
  * 
  * @param width New text width scale factor.
  * @param height New text height scale factor.
  */
 void gfx16_SetTextScale(uint8_t width, uint8_t height);
+
+/**
+ * @brief Get the text width scale factor.
+ * 
+ * @return uint8_t Width scale factor.
+ */
+uint8_t gfx16_GetTextWidthScale(void);
+
+/**
+ * @brief Get the text height scale factor.
+ * 
+ * @return uint8_t Height scale factor.
+ */
+uint8_t gfx16_GetTextHeightScale(void);
 
 /**
  * @brief Places an int at the current cursor position.
@@ -595,6 +623,22 @@ void gfx16_SetCharWidth(char index, uint8_t width);
  * @param data Pointer to formatted 8x8 pixel font.
  */
 void gfx16_SetCharData(char index, const uint8_t *data);
+
+/**
+ * @brief Gets the width of an individual character in the font.
+ * 
+ * @param index Character index. 
+ * @return unsigned int Width of the characters in pixels.
+ */
+unsigned int gfx16_GetCharWidth(char index);
+
+/**
+ * @brief Gets the width of a string.
+ * 
+ * @param string Pointer to string.
+ * @return unsigned int Width of the string in pixels.
+ */
+unsigned int gfx16_GetStringWidth(char *string);
 
 #ifdef __cplusplus
 }

@@ -61,7 +61,11 @@ library GFX16, 1
     export gfx16_PutString
     export gfx16_PutStringXY
     export gfx16_SetTextXY
+    export gfx16_GetTextX
+    export gfx16_GetTextY
     export gfx16_SetTextScale
+    export gfx16_GetTextWidthScale
+    export gfx16_GetTextHeightScale
     export gfx16_PrintInt
     export gfx16_PrintUInt
     export gfx16_SetTextFGColor
@@ -71,6 +75,8 @@ library GFX16, 1
     export gfx16_SetFontData
     export gfx16_SetCharWidth
     export gfx16_SetCharData
+    export gfx16_GetCharWidth
+    export gfx16_GetStringWidth
 ;-------------------------------------------------------------------------------
 LcdSize         := ti.lcdWidth * ti.lcdHeight
 VRAMSizeBytes   := LcdSize * 2
@@ -2901,6 +2907,26 @@ gfx16_SetTextXY:
     ret
 
 ;-------------------------------------------------------------------------------
+gfx16_GetTextX:
+; Get the text cursor X coordinate.
+; Arguments:
+;  None
+; Returns:
+;  X coordinate.
+    ld hl, (_PutChar.cursorX)
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_GetTextY:
+; Get the text cursor Y coordinate.
+; Arguments:
+;  None
+; Returns:
+;  Y coordinate.
+    ld a, (_PutChar.cursorY)
+    ret
+
+;-------------------------------------------------------------------------------
 gfx16_SetTextScale:
 ; Sets the text scaling factors.
 ; Arguments:
@@ -2926,6 +2952,27 @@ gfx16_SetTextScale:
     ld (_PutChar.scaleHeight), a
     ld (_PutChar.scaleInitial + 1), a
     ret
+
+;-------------------------------------------------------------------------------
+gfx16_GetTextWidthScale:
+; Get the text width scale factor.
+; Arguments:
+;  None
+; Returns:
+;  Width scale factor.
+    ld a, (_PutChar.scaleWidth)
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_GetTextHeightScale:
+; Get the text height scale factor.
+; Arguments:
+;  None
+; Returns:
+;  Height scale factor.
+    ld a, (_PutChar.scaleHeight)
+    ret
+
 ;-------------------------------------------------------------------------------
 gfx16_PrintInt:
 ; Places an int at the current cursor position.
@@ -3131,6 +3178,59 @@ gfx16_SetCharData:
     pop hl
     ld bc, 8
     ldir
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_GetCharWidth:
+; Gets the width of an individual character in the font.
+; Arguments:
+;  arg0: Character index.
+; Returns:
+;  Width of the characters in pixels.
+    ld hl, 3
+    add hl, sp
+    ld a, (hl)
+    sbc hl, hl
+    ex de, hl
+
+_GetCharWidth:
+    ld bc, (_CharSpacing)
+    add hl, bc
+    ld a, (hl)
+
+.fixed:
+    ld l, a
+    ld a, (_PutChar.scaleWidth)
+    ld h, a
+    mlt hl
+    add hl, de
+    ret
+
+;-------------------------------------------------------------------------------
+gfx16_GetStringWidth:
+; Gets the width of a string.
+; Arguments:
+;  arg0: Pointer to string.
+; Returns:
+;  Width of the string in pixels.
+    pop de
+    ex (sp), hl
+    push de
+    ld de, 0
+
+.loop:
+    ld a, (hl)
+    or a, a
+    jr z, .done
+    push hl
+    call _GetCharWidth
+    ex de, hl
+    pop hl
+    inc hl
+    jr .loop
+
+.done:
+    ex de, hl
     ret
 
 ;-------------------------------------------------------------------------------
