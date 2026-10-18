@@ -3194,11 +3194,11 @@ gfx16_GetCharWidth:
     ex de, hl
 
 _GetCharWidth:
+    sbc hl, hl
+    ld l, a
     ld bc, (_CharSpacing)
     add hl, bc
     ld a, (hl)
-
-.fixed:
     ld l, a
     ld a, (_PutChar.scaleWidth)
     ld h, a

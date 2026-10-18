@@ -630,7 +630,7 @@ void gfx16_SetCharData(char index, const uint8_t *data);
  * @param index Character index. 
  * @return unsigned int Width of the characters in pixels.
  */
-unsigned int gfx16_GetCharWidth(char index);
+unsigned int gfx16_GetCharWidth(char index) __attribute__((__pure__));;
 
 /**
  * @brief Gets the width of a string.
@@ -638,7 +638,7 @@ unsigned int gfx16_GetCharWidth(char index);
  * @param string Pointer to string.
  * @return unsigned int Width of the string in pixels.
  */
-unsigned int gfx16_GetStringWidth(char *string);
+unsigned int gfx16_GetStringWidth(const char *string) __attribute__((__pure__));
 
 #ifdef __cplusplus
 }
